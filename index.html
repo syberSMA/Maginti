@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MAGINTI ALBUM</title>
   
+  <!-- Font Kustom -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -30,7 +35,7 @@
         <img src="https://files.catbox.moe/8xa1ha.png" alt="Logo" />
         <div>
           <h1>MAGINTI ALBUM <span id="adminBadge" class="badge badge-dev" style="display:none; font-size:12px; margin-left:6px; vertical-align:middle;"><i class='bx bx-shield-quarter'></i> Mode Admin</span></h1>
-          <p>Galeri Digital Pulau Maginti</p>
+          <p style="font-family: 'Inter', sans-serif;">Galeri Digital Pulau Maginti</p>
         </div>
       </header>
 
@@ -39,7 +44,11 @@
         <div class="banner-slide"><img src="https://files.catbox.moe/reqrry.png" alt="Banner 2" /></div>
       </section>
 
-      <input type="text" id="searchInput" class="input-field search-box" placeholder="Cari berdasarkan judul atau kategori..." autocomplete="off" />
+      <!-- SEARCH BAR DENGAN ICON -->
+      <div class="search-container">
+        <i class='bx bx-search search-icon'></i>
+        <input type="text" id="searchInput" class="search-box" placeholder="Cari foto, kategori, atau nama..." autocomplete="off" />
+      </div>
 
       <div class="category-container" id="categoryNav">
         <button class="cat-btn active" data-cat="all"><i class='bx bx-grid-alt'></i> SEMUA</button>
@@ -74,7 +83,7 @@
         </div>
       </div>
 
-      <!-- Menu Khusus Admin (Hanya Muncul kalau Admin Aktif) -->
+      <!-- Menu Khusus Admin -->
       <div id="adminMenuWrap" style="display: none; flex-direction: column; gap: 12px; margin-top: 10px;">
         <hr style="border: 1px solid var(--card-border); margin: 5px 0;">
         <p style="font-size:12px; color:var(--text-muted); font-weight:bold; margin-bottom:4px;"><i class='bx bx-crown'></i> ALAT ADMIN</p>
@@ -93,14 +102,23 @@
     </div>
   </div>
 
-  <!-- MODAL INFO -->
+  <!-- MODAL INFO DEVELOPER BARU -->
   <div class="overlay" id="infoModal">
-    <div class="modal-content">
+    <div class="modal-content dev-card-container">
       <i class='bx bx-x close-modal' onclick="closeModal('infoModal')"></i>
-      <h2 style="margin-bottom: 16px; color: var(--brand);">Tentang Web</h2>
-      <p style="margin-bottom: 12px; line-height: 1.6; font-size: 15px;">MAGINTI ALBUM adalah platform galeri digital eksklusif yang didedikasikan untuk mengarsipkan dokumentasi visual seputar kegiatan dan momen berharga di Pulau Maginti.</p>
-      <div style="background: var(--card-bg); padding: 14px; border-radius: 12px; border: 1px solid var(--card-border); text-align: center; font-weight: bold; margin-top: 20px;">
-        web Developer : HAMDI
+      
+      <div class="dev-profile">
+        <div class="dev-avatar">
+          <i class='bx bx-user-secret'></i>
+        </div>
+        <h2 class="dev-name">Saybatul Hamdi</h2>
+        <p class="dev-title">
+          Hamdi Dev <i class='bx bxs-badge-check verified-badge'></i>
+        </p>
+      </div>
+      
+      <div class="dev-desc">
+        <p>MAGINTI ALBUM adalah platform galeri digital eksklusif yang didedikasikan untuk mengarsipkan dokumentasi visual seputar kegiatan dan momen berharga di Pulau Maginti.</p>
       </div>
     </div>
   </div>
@@ -108,7 +126,7 @@
   <!-- MODAL PROMPT LOGIN ADMIN -->
   <div class="overlay" id="promptModal" style="z-index: 3000;">
     <div class="modal-content" style="max-width: 350px; text-align: center;">
-      <h3 style="margin-bottom: 16px;" id="promptTitle"><i class='bx bx-shield-quarter'></i> Masukkan Password Admin</h3>
+      <h3 style="margin-bottom: 16px; font-family:'Outfit', sans-serif;"><i class='bx bx-shield-quarter'></i> Masukkan Password Admin</h3>
       <input type="password" id="promptInput" class="input-field" placeholder="Ketik sandi rahasia..." autocomplete="off" />
       <div style="display: flex; gap: 10px; margin-top: 10px;">
         <button class="btn-outline" style="flex: 1; justify-content: center;" onclick="closeModal('promptModal')">Batal</button>
@@ -117,11 +135,11 @@
     </div>
   </div>
 
-  <!-- MODAL KONFIRMASI CUSTOM (Hapus dll) -->
+  <!-- MODAL KONFIRMASI -->
   <div class="overlay" id="confirmModal" style="z-index: 4000;">
     <div class="modal-content" style="max-width: 350px; text-align: center;">
       <div style="width:50px; height:50px; background:rgba(239,68,68,0.15); color:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 16px;"><i class='bx bx-error-alt'></i></div>
-      <h3 id="confirmTitle" style="margin-bottom: 8px;">Konfirmasi</h3>
+      <h3 id="confirmTitle" style="margin-bottom: 8px; font-family:'Outfit', sans-serif;">Konfirmasi</h3>
       <p id="confirmMsg" style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">Apakah Anda yakin?</p>
       <div style="display: flex; gap: 10px;">
         <button class="btn-outline" style="flex: 1; justify-content: center;" onclick="closeModal('confirmModal')">Batal</button>
@@ -130,12 +148,12 @@
     </div>
   </div>
 
-  <!-- MODAL TAMBAH FOTO (User) -->
+  <!-- MODAL TAMBAH FOTO (UPDATE: CHIP KATEGORI) -->
   <div class="overlay" id="submitModal">
     <div class="modal-content">
       <i class='bx bx-x close-modal' onclick="closeModal('submitModal')"></i>
       <h2 style="margin-bottom: 8px;">Ajukan Foto Baru</h2>
-      <p style="font-size: 12px; color: #ef4444; margin-bottom: 16px; font-weight: bold;">(Limit: Maksimal 3 upload per hari)</p>
+      <p style="font-size: 12px; color: #ef4444; margin-bottom: 16px; font-weight: 600;">(Limit: Maksimal 3 upload per hari)</p>
       <form id="submitForm">
         <label class="form-label">Nama Anda (Pengaju)</label>
         <input type="text" id="subName" class="input-field" placeholder="Masukkan nama..." required autocomplete="off" />
@@ -146,15 +164,15 @@
         <label class="form-label">Deskripsi Singkat</label>
         <input type="text" id="subDesc" class="input-field" placeholder="Deskripsi foto..." required autocomplete="off" />
 
-        <label class="form-label">Kategori (Pilih atau Buat Baru)</label>
-        <div style="display:flex; gap:10px; margin-bottom: 16px;">
-          <div class="custom-select-wrapper" id="customCatWrapper" style="flex: 1;">
-            <div class="custom-select" id="customCatBtn"><span id="customCatText">-- Pilih Kategori --</span><i class='bx bx-chevron-down'></i></div>
-            <div class="custom-options" id="customCatOptions"></div>
-            <input type="hidden" id="subCategory" value="" />
-          </div>
-          <input type="text" id="subNewCategory" class="input-field" placeholder="Buat Baru..." style="flex: 1; margin-bottom: 0;" autocomplete="off" />
+        <label class="form-label">Pilih Kategori Utama</label>
+        <!-- GRID PILIH KATEGORI (Pengganti Dropdown) -->
+        <div class="cat-grid-selector" id="catGridSelector">
+           <!-- Rendered via JS -->
         </div>
+        <input type="hidden" id="subCategory" value="" />
+        
+        <label class="form-label" style="margin-top: 10px;">Atau Buat Kategori Baru (Opsional)</label>
+        <input type="text" id="subNewCategory" class="input-field" placeholder="Ketik kategori baru..." autocomplete="off" />
 
         <label class="form-label">Metode Input Gambar</label>
         <div class="toggle-group">
@@ -208,7 +226,7 @@
     </div>
   </div>
 
-  <!-- MODAL LOG AKTIVITAS (ADMIN BESAR) -->
+  <!-- MODAL LOG AKTIVITAS (ADMIN) -->
   <div class="overlay" id="logModal">
     <div class="modal-content modal-large">
       <i class='bx bx-x close-modal' onclick="closeModal('logModal')"></i>
@@ -230,22 +248,31 @@
     </div>
   </div>
 
-  <!-- MODAL VIEWER -->
+  <!-- MODAL VIEWER GAMBAR -->
   <div class="overlay" id="viewerModal">
     <div class="modal-content" style="max-width: 800px; background: transparent; border: none; box-shadow: none;">
       <i class='bx bx-x close-modal' onclick="closeModal('viewerModal')" style="color: #fff; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px;"></i>
-      <img id="viewerImage" src="" class="viewer-img" />
-      <h3 id="viewerTitle" style="text-align: center; color: white; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.8);"></h3>
-      <p id="viewerDesc" style="text-align: center; color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 16px;"></p>
       
-      <div class="viewer-actions-bar">
-        <a id="btnDownloadLink" href="#" download="maginti_album.jpg" class="btn-outline" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); font-weight: bold; text-decoration: none;"><i class='bx bx-download' style="font-size: 20px;"></i> Download</a>
-        <button class="btn-outline" id="btnShare" style="background: #10b981; color: white; border: none; font-weight: bold;"><i class='bx bxl-whatsapp' style="font-size: 20px;"></i> Bagikan via WA</button>
+      <!-- LOADING INDIKATOR UNTUK VIEWER -->
+      <div id="viewerLoading" style="display:flex; justify-content:center; align-items:center; height: 60vh;">
+         <i class='bx bx-loader bx-spin' style="font-size: 40px; color: white;"></i>
       </div>
+
+      <img id="viewerImage" src="" class="viewer-img" style="display:none;" />
+      
+      <div id="viewerContent" style="display:none;">
+        <h3 id="viewerTitle" style="text-align: center; color: white; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); font-family: 'Outfit', sans-serif;"></h3>
+        <p id="viewerDesc" style="text-align: center; color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 16px;"></p>
+        
+        <div class="viewer-actions-bar">
+          <a id="btnDownloadLink" href="#" download="maginti_album.jpg" class="btn-outline" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); font-weight: bold; text-decoration: none;"><i class='bx bx-download' style="font-size: 20px;"></i> Download</a>
+          <button class="btn-outline" id="btnShare" style="background: #10b981; color: white; border: none; font-weight: bold;"><i class='bx bxl-whatsapp' style="font-size: 20px;"></i> Bagikan via WA</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- Script Logika -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
