@@ -29,7 +29,7 @@
       <header class="header">
         <img src="https://files.catbox.moe/8xa1ha.png" alt="Logo" />
         <div>
-          <h1>MAGINTI ALBUM</h1>
+          <h1>MAGINTI ALBUM <span id="adminBadge" class="badge badge-dev" style="display:none; font-size:12px; margin-left:6px; vertical-align:middle;"><i class='bx bx-shield-quarter'></i> Mode Admin</span></h1>
           <p>Galeri Digital Pulau Maginti</p>
         </div>
       </header>
@@ -58,13 +58,36 @@
     <div class="modal-content">
       <i class='bx bx-x close-modal' onclick="closeModal('menuModal')"></i>
       <h2 style="margin-bottom: 20px;">Navigasi Utama</h2>
+      
+      <!-- Menu User Reguler -->
       <div style="display: flex; flex-direction: column; gap: 12px;">
         <a href="https://wa.me/6285137258944" target="_blank" class="btn-outline" style="text-decoration: none;"><i class='bx bxl-whatsapp' style="color:#25D366; font-size:20px;"></i> Hubungi Developer</a>
         <button class="btn-outline" onclick="openInfo()"><i class='bx bx-info-circle' style="font-size:20px;"></i> Info Web</button>
-        <hr style="border: 1px solid var(--card-border); margin: 10px 0;">
-        <button class="btn-outline" onclick="triggerAdminLogin()" style="color: #ef4444; border-color: rgba(239,68,68,0.3); justify-content: space-between;">
-          <span style="display:flex; align-items:center; gap:8px;"><i class='bx bx-shield-quarter' style="font-size:20px;"></i> Login Admin Dashboard</span>
+        
+        <!-- Pintu Masuk Admin -->
+        <div id="loginAdminWrap">
+          <hr style="border: 1px solid var(--card-border); margin: 10px 0;">
+          <button class="btn-outline" onclick="triggerAdminLogin()" style="color: #ef4444; border-color: rgba(239,68,68,0.3); justify-content: space-between;">
+            <span style="display:flex; align-items:center; gap:8px;"><i class='bx bx-shield-quarter' style="font-size:20px;"></i> Login Admin Dashboard</span>
+            <i class='bx bx-chevron-right'></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Menu Khusus Admin (Hanya Muncul kalau Admin Aktif) -->
+      <div id="adminMenuWrap" style="display: none; flex-direction: column; gap: 12px; margin-top: 10px;">
+        <hr style="border: 1px solid var(--card-border); margin: 5px 0;">
+        <p style="font-size:12px; color:var(--text-muted); font-weight:bold; margin-bottom:4px;"><i class='bx bx-crown'></i> ALAT ADMIN</p>
+        <button class="btn-outline" onclick="openModal('adminAjuanModal'); closeModal('menuModal');" style="justify-content: space-between; border-color: var(--brand);">
+          <span style="display:flex; align-items:center; gap:8px;"><i class='bx bx-image-add' style="color:var(--brand); font-size:20px;"></i> Ajuan Foto Pending</span>
           <i class='bx bx-chevron-right'></i>
+        </button>
+        <button class="btn-outline" onclick="openLogAktivitas(); closeModal('menuModal');" style="justify-content: space-between; border-color: #10b981;">
+          <span style="display:flex; align-items:center; gap:8px;"><i class='bx bx-history' style="color:#10b981; font-size:20px;"></i> Log Aktivitas</span>
+          <i class='bx bx-chevron-right'></i>
+        </button>
+        <button class="btn-outline" onclick="logoutAdmin()" style="color: #ef4444; border-color: rgba(239,68,68,0.3); justify-content: center;">
+          <i class='bx bx-log-out' style="font-size:20px;"></i> Keluar Mode Admin
         </button>
       </div>
     </div>
@@ -82,19 +105,32 @@
     </div>
   </div>
 
-  <!-- MODAL PROMPT CUSTOM (Ganti alert/prompt bawaan browser) -->
+  <!-- MODAL PROMPT LOGIN ADMIN -->
   <div class="overlay" id="promptModal" style="z-index: 3000;">
     <div class="modal-content" style="max-width: 350px; text-align: center;">
-      <h3 style="margin-bottom: 16px;" id="promptTitle">Masukkan Password</h3>
-      <input type="password" id="promptInput" class="input-field" placeholder="Password Admin..." autocomplete="off" />
+      <h3 style="margin-bottom: 16px;" id="promptTitle"><i class='bx bx-shield-quarter'></i> Masukkan Password Admin</h3>
+      <input type="password" id="promptInput" class="input-field" placeholder="Ketik sandi rahasia..." autocomplete="off" />
       <div style="display: flex; gap: 10px; margin-top: 10px;">
         <button class="btn-outline" style="flex: 1; justify-content: center;" onclick="closeModal('promptModal')">Batal</button>
-        <button class="btn-primary" style="flex: 1;" id="btnPromptSubmit">Oke</button>
+        <button class="btn-primary" style="flex: 1;" id="btnPromptSubmit">Login</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL TAMBAH FOTO -->
+  <!-- MODAL KONFIRMASI CUSTOM (Hapus dll) -->
+  <div class="overlay" id="confirmModal" style="z-index: 4000;">
+    <div class="modal-content" style="max-width: 350px; text-align: center;">
+      <div style="width:50px; height:50px; background:rgba(239,68,68,0.15); color:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 16px;"><i class='bx bx-error-alt'></i></div>
+      <h3 id="confirmTitle" style="margin-bottom: 8px;">Konfirmasi</h3>
+      <p id="confirmMsg" style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">Apakah Anda yakin?</p>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-outline" style="flex: 1; justify-content: center;" onclick="closeModal('confirmModal')">Batal</button>
+        <button class="btn-primary" style="flex: 1; background: #ef4444;" id="btnConfirmAction">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH FOTO (User) -->
   <div class="overlay" id="submitModal">
     <div class="modal-content">
       <i class='bx bx-x close-modal' onclick="closeModal('submitModal')"></i>
@@ -112,12 +148,8 @@
 
         <label class="form-label">Kategori (Pilih atau Buat Baru)</label>
         <div style="display:flex; gap:10px; margin-bottom: 16px;">
-          <!-- Custom Select (Ganti select bawaan) -->
           <div class="custom-select-wrapper" id="customCatWrapper" style="flex: 1;">
-            <div class="custom-select" id="customCatBtn">
-              <span id="customCatText">-- Pilih Kategori --</span>
-              <i class='bx bx-chevron-down'></i>
-            </div>
+            <div class="custom-select" id="customCatBtn"><span id="customCatText">-- Pilih Kategori --</span><i class='bx bx-chevron-down'></i></div>
             <div class="custom-options" id="customCatOptions"></div>
             <input type="hidden" id="subCategory" value="" />
           </div>
@@ -134,7 +166,6 @@
           <input type="file" id="subFile" class="input-field" accept="image/*" />
           <p style="font-size: 11px; color: var(--text-muted); margin-top: -10px; margin-bottom: 16px;">Gambar akan dikompres otomatis.</p>
         </div>
-        
         <div id="inputUrlContainer" style="display: none;">
           <input type="url" id="subUrl" class="input-field" placeholder="https://contoh.com/gambar.jpg" autocomplete="off" />
         </div>
@@ -144,13 +175,49 @@
     </div>
   </div>
 
-  <!-- MODAL ADMIN -->
-  <div class="overlay" id="adminModal">
-    <div class="modal-content" style="max-width: 600px;">
-      <i class='bx bx-x close-modal' onclick="closeModal('adminModal')"></i>
-      <h2 style="margin-bottom: 8px;"><i class='bx bx-shield-quarter'></i> Dashboard Admin</h2>
-      <p style="font-size: 13px; color: var(--text-muted);">Daftar pengajuan foto yang menunggu persetujuan (Status: Pending).</p>
-      <div class="admin-list" id="adminList"></div>
+  <!-- MODAL EDIT KONTEN (Khusus Admin) -->
+  <div class="overlay" id="editModal">
+    <div class="modal-content">
+      <i class='bx bx-x close-modal' onclick="closeModal('editModal')"></i>
+      <h2 style="margin-bottom: 16px;"><i class='bx bx-edit-alt'></i> Edit Konten Foto</h2>
+      <form id="editForm">
+        <input type="hidden" id="editDocId">
+        
+        <label class="form-label">Judul Gambar</label>
+        <input type="text" id="editTitle" class="input-field" required autocomplete="off" />
+        
+        <label class="form-label">Deskripsi Singkat</label>
+        <input type="text" id="editDesc" class="input-field" required autocomplete="off" />
+
+        <label class="form-label">Ubah Kategori (Ketik nama baru/lama)</label>
+        <input type="text" id="editCat" class="input-field" required autocomplete="off" />
+
+        <button type="submit" class="btn-primary" id="btnEditForm"><i class='bx bx-save' style="font-size: 20px;"></i> Simpan Perubahan</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL AJUAN PENDING (ADMIN BESAR) -->
+  <div class="overlay" id="adminAjuanModal">
+    <div class="modal-content modal-large">
+      <i class='bx bx-x close-modal' onclick="closeModal('adminAjuanModal')"></i>
+      <h2 style="margin-bottom: 8px;"><i class='bx bx-image-add' style="color:var(--brand);"></i> Daftar Ajuan Pending</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom:16px;">Tinjau pengajuan dari user. Terima untuk menampilkan ke publik.</p>
+      
+      <div class="admin-list scrollable" id="adminList"></div>
+    </div>
+  </div>
+
+  <!-- MODAL LOG AKTIVITAS (ADMIN BESAR) -->
+  <div class="overlay" id="logModal">
+    <div class="modal-content modal-large">
+      <i class='bx bx-x close-modal' onclick="closeModal('logModal')"></i>
+      <h2 style="margin-bottom: 8px;"><i class='bx bx-history' style="color:#10b981;"></i> Log Aktivitas Admin</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom:16px;">Riwayat lengkap perubahan, moderasi, dan penghapusan data.</p>
+      
+      <div class="admin-list scrollable" id="logList">
+        <p style="text-align:center; padding: 20px;"><i class='bx bx-loader bx-spin'></i> Memuat log...</p>
+      </div>
     </div>
   </div>
 
@@ -159,7 +226,7 @@
     <div class="modal-content">
       <i class='bx bx-x close-modal' onclick="closeModal('notifModal')"></i>
       <h2 style="margin-bottom: 16px;"><i class='bx bx-bell'></i> Notifikasi Saya</h2>
-      <div class="admin-list" id="notifList"></div>
+      <div class="admin-list scrollable" style="max-height: 400px;" id="notifList"></div>
     </div>
   </div>
 
@@ -178,7 +245,7 @@
     </div>
   </div>
 
-  <!-- Memanggil Script Logika -->
+  <!-- Script Logika -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
