@@ -26,7 +26,31 @@ let allPhotos = [];
 let currentCategory = "all";
 const defaultIcons = { "TK MAGINTI": "bx-book-reader", "SD NEGERI 1": "bx-building", "SMP NEGERI 1": "bx-buildings", "SMA NEGERI 2": "bx-graduation", "SUNSET SANRES": "bx-sun", "STREET VIEW": "bx-map-alt" };
 
-// Daftarkan fungsi ke window agar bisa diakses dari atribut HTML onclick
+// ==========================================
+// OPTIMASI GAMBAR & FALLBACK ANTI-LAG
+// ==========================================
+window.getOptimizedUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http") && url.includes("catbox.moe")) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp&w=400&q=70`;
+  }
+  return url; 
+};
+
+window.handleImgError = (img, rawUrl) => {
+  if (!img.dataset.retried) {
+    img.dataset.retried = "true";
+    img.src = rawUrl; 
+  } else {
+    img.parentElement.classList.remove('skeleton');
+    img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%231e293b"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="16" fill="%2394a3b8" font-family="sans-serif"%3EGagal Memuat%3C/text%3E%3C/svg%3E';
+    img.classList.add('loaded');
+  }
+};
+
+// ==========================================
+// NAVIGASI MODAL
+// ==========================================
 window.openModal = (id) => { document.getElementById(id).classList.add('active'); document.body.classList.add('no-scroll'); }
 window.closeModal = (id) => { document.getElementById(id).classList.remove('active'); document.body.classList.remove('no-scroll'); }
 window.openInfo = () => { closeModal('menuModal'); openModal('infoModal'); }
@@ -45,6 +69,9 @@ document.getElementById('btnAddPhoto').onclick = () => {
   openModal('submitModal'); 
 }
 
+// ==========================================
+// BANNER & TEMA
+// ==========================================
 let currentSlide = 0;
 const slides = document.querySelectorAll('.banner-slide');
 setInterval(() => {
@@ -60,7 +87,7 @@ document.getElementById('btnTheme').onclick = () => {
 };
 
 // ==========================================
-// LISTENER FIRESTORE (GALERI)
+// LISTENER FIRESTORE & RENDER GALERI
 // ==========================================
 const qPhotos = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
 onSnapshot(qPhotos, (snapshot) => {
@@ -124,12 +151,24 @@ function renderGallery() {
     filtered.forEach(p => {
       const card = document.createElement('div');
       card.className = 'card';
+      
+      const optUrl = window.getOptimizedUrl(p.url);
+      const rawUrl = p.url; 
+
       card.innerHTML = `
-        <img src="${p.url}" alt="${p.title}" loading="lazy">
+        <div class="img-wrapper skeleton">
+          <img src="${optUrl}" 
+               loading="lazy" 
+               decoding="async"
+               alt="${p.title}" 
+               onload="this.parentElement.classList.remove('skeleton'); this.classList.add('loaded');"
+               onerror="window.handleImgError(this, '${rawUrl}')">
+        </div>
         <div class="card-body">
           <div class="card-title">${p.title}</div>
           <div class="card-meta"><span>${p.category}</span> <span>By: ${p.submitterName}</span></div>
         </div>`;
+        
       card.onclick = () => window.openViewer(p);
       gallery.appendChild(card);
     });
@@ -138,7 +177,7 @@ function renderGallery() {
 document.getElementById('searchInput').oninput = renderGallery;
 
 // ==========================================
-// FUNGSI CEK LIMIT (3X PER HARI)
+// FUNGSI CEK LIMIT & KOMPRESI GAMBAR
 // ==========================================
 function checkDailyLimit() {
   const today = new Date();
@@ -153,9 +192,6 @@ function checkDailyLimit() {
   return myUploadsToday.length >= 3;
 }
 
-// ==========================================
-// FUNGSI KOMPRESI GAMBAR (CANVAS)
-// ==========================================
 function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -308,7 +344,7 @@ window.handleModeration = async (docId, status, targetDeviceId, title) => {
 };
 
 // ==========================================
-// VIEWER
+// VIEWER GAMBAR FULLSCREEN
 // ==========================================
 window.openViewer = (data) => {
   document.getElementById('viewerImage').src = data.url;
