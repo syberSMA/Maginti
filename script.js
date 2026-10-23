@@ -14,20 +14,86 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ==========================================
-// IDENTITAS DEVICE
+// IDENTITAS & GLOBAL STATE
 // ==========================================
 let deviceId = localStorage.getItem('maginti_device_id');
 if (!deviceId) {
   deviceId = 'device_' + Math.random().toString(36).substr(2, 9);
   localStorage.setItem('maginti_device_id', deviceId);
 }
-
 let allPhotos = [];
 let currentCategory = "all";
 const defaultIcons = { "TK MAGINTI": "bx-book-reader", "SD NEGERI 1": "bx-building", "SMP NEGERI 1": "bx-buildings", "SMA NEGERI 2": "bx-graduation", "SUNSET SANRES": "bx-sun", "STREET VIEW": "bx-map-alt" };
 
 // ==========================================
-// OPTIMASI GAMBAR & FALLBACK ANTI-LAG
+// CUSTOM UI (TOAST & MODALS) - Pengganti bawaan browser
+// ==========================================
+window.showToast = (msg, type = "success") => {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastMsg').innerText = msg;
+  document.getElementById('toastIcon').className = type === 'success' ? 'bx bx-check-circle' : 'bx bx-x-circle';
+  toast.className = `toast show ${type}`;
+  setTimeout(() => toast.classList.remove('show'), 3500);
+};
+
+window.openModal = (id) => { document.getElementById(id).classList.add('active'); document.body.classList.add('no-scroll'); }
+window.closeModal = (id) => { document.getElementById(id).classList.remove('active'); document.body.classList.remove('no-scroll'); }
+window.openInfo = () => { closeModal('menuModal'); openModal('infoModal'); }
+
+// ==========================================
+// LOGIKA INPUT FORM (TOGGLE TABS)
+// ==========================================
+const btnTabFile = document.getElementById('btnTabFile');
+const btnTabUrl = document.getElementById('btnTabUrl');
+const containerFile = document.getElementById('inputFileContainer');
+const containerUrl = document.getElementById('inputUrlContainer');
+const subFile = document.getElementById('subFile');
+const subUrl = document.getElementById('subUrl');
+
+btnTabFile.onclick = () => {
+  btnTabFile.classList.add('active'); btnTabUrl.classList.remove('active');
+  containerFile.style.display = 'block'; containerUrl.style.display = 'none';
+  subFile.required = true; subUrl.required = false;
+};
+btnTabUrl.onclick = () => {
+  btnTabUrl.classList.add('active'); btnTabFile.classList.remove('active');
+  containerUrl.style.display = 'block'; containerFile.style.display = 'none';
+  subUrl.required = true; subFile.required = false;
+};
+
+// ==========================================
+// CUSTOM DROPDOWN SELECT
+// ==========================================
+const catWrapper = document.getElementById('customCatWrapper');
+const catBtn = document.getElementById('customCatBtn');
+const catOptions = document.getElementById('customCatOptions');
+const catText = document.getElementById('customCatText');
+const hiddenInputCat = document.getElementById('subCategory');
+
+catBtn.onclick = () => catWrapper.classList.toggle('open');
+document.addEventListener('click', (e) => {
+  if (!catWrapper.contains(e.target)) catWrapper.classList.remove('open');
+});
+
+function populateCustomDropdown() {
+  const approvedPhotos = allPhotos.filter(p => p.status === 'approved');
+  const uniqueCats = [...new Set(approvedPhotos.map(p => p.category))];
+  catOptions.innerHTML = `<div class="custom-option" data-value="">-- Pilih Kategori --</div>`;
+  uniqueCats.forEach(cat => {
+    catOptions.innerHTML += `<div class="custom-option" data-value="${cat}">${cat}</div>`;
+  });
+  
+  document.querySelectorAll('.custom-option').forEach(opt => {
+    opt.onclick = () => {
+      catText.innerText = opt.innerText;
+      hiddenInputCat.value = opt.getAttribute('data-value');
+      catWrapper.classList.remove('open');
+    };
+  });
+}
+
+// ==========================================
+// OPTIMASI GAMBAR
 // ==========================================
 window.getOptimizedUrl = (url) => {
   if (!url) return "";
@@ -49,29 +115,22 @@ window.handleImgError = (img, rawUrl) => {
 };
 
 // ==========================================
-// NAVIGASI MODAL
+// BINDINGS & LISTENERS
 // ==========================================
-window.openModal = (id) => { document.getElementById(id).classList.add('active'); document.body.classList.add('no-scroll'); }
-window.closeModal = (id) => { document.getElementById(id).classList.remove('active'); document.body.classList.remove('no-scroll'); }
-window.openInfo = () => { closeModal('menuModal'); openModal('infoModal'); }
-
 document.getElementById('btnMenu').onclick = () => openModal('menuModal');
 document.getElementById('btnNotif').onclick = () => { openModal('notifModal'); document.getElementById('notifBadge').style.display = 'none'; }
 
 document.getElementById('btnAddPhoto').onclick = () => { 
   if(checkDailyLimit()) {
-      alert("Limit Tercapai! Lu udah kirim 3 foto hari ini, Bro. Besok lagi ya!");
+      window.showToast("Limit Tercapai! Maksimal 3 upload per hari.", "error");
       return;
   }
-  populateCategoryDropdown();
+  populateCustomDropdown();
   const savedName = localStorage.getItem('maginti_submitter_name');
   if(savedName) document.getElementById('subName').value = savedName;
   openModal('submitModal'); 
 }
 
-// ==========================================
-// BANNER & TEMA
-// ==========================================
 let currentSlide = 0;
 const slides = document.querySelectorAll('.banner-slide');
 setInterval(() => {
@@ -87,7 +146,7 @@ document.getElementById('btnTheme').onclick = () => {
 };
 
 // ==========================================
-// LISTENER FIRESTORE & RENDER GALERI
+// FIRESTORE LISTENER (GALERI)
 // ==========================================
 const qPhotos = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
 onSnapshot(qPhotos, (snapshot) => {
@@ -108,7 +167,6 @@ onSnapshot(qNotif, (snapshot) => {
     hasData = true;
     const n = docSnap.data();
     if(!n.read) unreadCount++;
-    
     list.innerHTML += `
       <div class="admin-item" style="display:block; padding:16px; border-left: 4px solid ${n.status === 'approved' ? '#10b981' : '#ef4444'};">
         <p style="font-size:14px; margin-bottom:4px; font-weight: ${n.read ? 'normal' : 'bold'};">${n.message}</p>
@@ -152,23 +210,28 @@ function renderGallery() {
       const card = document.createElement('div');
       card.className = 'card';
       
-      const optUrl = window.getOptimizedUrl(p.url);
-      const rawUrl = p.url; 
+      // LOGIKA BADGE LABEL DEV/USER
+      let badgeHtml = '';
+      const nameL = p.submitterName.toLowerCase();
+      if (nameL === 'admin system' || nameL === 'dev upload') {
+        badgeHtml = `<span class="badge badge-dev"><i class='bx bxs-check-shield'></i> Dev Upload</span>`;
+      } else {
+        badgeHtml = `<span class="badge badge-user"><i class='bx bxs-user'></i> By: ${p.submitterName}</span>`;
+      }
 
       card.innerHTML = `
         <div class="img-wrapper skeleton">
-          <img src="${optUrl}" 
-               loading="lazy" 
-               decoding="async"
-               alt="${p.title}" 
+          <img src="${window.getOptimizedUrl(p.url)}" loading="lazy" decoding="async" alt="${p.title}" 
                onload="this.parentElement.classList.remove('skeleton'); this.classList.add('loaded');"
-               onerror="window.handleImgError(this, '${rawUrl}')">
+               onerror="window.handleImgError(this, '${p.url}')">
         </div>
         <div class="card-body">
           <div class="card-title">${p.title}</div>
-          <div class="card-meta"><span>${p.category}</span> <span>By: ${p.submitterName}</span></div>
+          <div class="badge-container">
+            <span class="badge-cat">${p.category}</span>
+            ${badgeHtml}
+          </div>
         </div>`;
-        
       card.onclick = () => window.openViewer(p);
       gallery.appendChild(card);
     });
@@ -177,19 +240,11 @@ function renderGallery() {
 document.getElementById('searchInput').oninput = renderGallery;
 
 // ==========================================
-// FUNGSI CEK LIMIT & KOMPRESI GAMBAR
+// SUBMIT FORM & COMPRESS (URL/FILE)
 // ==========================================
 function checkDailyLimit() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); 
-  
-  const myUploadsToday = allPhotos.filter(p => {
-    if(p.deviceId !== deviceId) return false;
-    const docDate = p.timestamp ? p.timestamp.toDate() : new Date();
-    return docDate >= today;
-  });
-
-  return myUploadsToday.length >= 3;
+  const today = new Date(); today.setHours(0, 0, 0, 0); 
+  return allPhotos.filter(p => p.deviceId === deviceId && (p.timestamp ? p.timestamp.toDate() : new Date()) >= today).length >= 3;
 }
 
 function compressImage(file) {
@@ -201,47 +256,24 @@ function compressImage(file) {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_SIZE = 800;
-
-        if (width > height && width > MAX_SIZE) {
-          height *= MAX_SIZE / width;
-          width = MAX_SIZE;
-        } else if (height > MAX_SIZE) {
-          width *= MAX_SIZE / height;
-          height = MAX_SIZE;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
+        let w = img.width, h = img.height;
+        if (w > h && w > 800) { h *= 800 / w; w = 800; } 
+        else if (h > 800) { w *= 800 / h; h = 800; }
+        canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const base64Str = canvas.toDataURL('image/jpeg', 0.6);
-        resolve(base64Str);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
       };
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = error => reject(error);
   });
-}
-
-// ==========================================
-// SUBMIT FORM
-// ==========================================
-function populateCategoryDropdown() {
-  const approvedPhotos = allPhotos.filter(p => p.status === 'approved');
-  const uniqueCats = [...new Set(approvedPhotos.map(p => p.category))];
-  const select = document.getElementById('subCategory');
-  select.innerHTML = '<option value="">-- Pilih Kategori --</option>';
-  uniqueCats.forEach(cat => select.innerHTML += `<option value="${cat}">${cat}</option>`);
 }
 
 document.getElementById('submitForm').onsubmit = async (e) => {
   e.preventDefault();
   
   if(checkDailyLimit()) {
-      alert("Gagal kirim! Lu udah kirim 3 foto hari ini.");
+      window.showToast("Gagal kirim! Limit harian 3 foto.", "error");
       window.closeModal('submitModal');
       return;
   }
@@ -249,38 +281,39 @@ document.getElementById('submitForm').onsubmit = async (e) => {
   const name = document.getElementById('subName').value.trim();
   const title = document.getElementById('subTitle').value.trim();
   const desc = document.getElementById('subDesc').value.trim();
-  const catSelect = document.getElementById('subCategory').value;
+  const catSelect = hiddenInputCat.value;
   const catNew = document.getElementById('subNewCategory').value.trim();
   const category = (catNew || catSelect || "UMUM").toUpperCase();
-  const fileInput = document.getElementById('subFile');
   const btn = document.getElementById('btnSubmitForm');
-
   localStorage.setItem('maginti_submitter_name', name);
+
+  let finalUrl = "";
+  const isFile = document.getElementById('btnTabFile').classList.contains('active');
 
   try {
     btn.disabled = true;
-    btn.innerHTML = "<i class='bx bx-loader bx-spin'></i> Memproses & Mengunggah...";
+    btn.innerHTML = "<i class='bx bx-loader bx-spin'></i> Memproses...";
 
-    const file = fileInput.files[0];
-    const compressedBase64 = await compressImage(file);
+    if (isFile) {
+      if (!subFile.files[0]) throw new Error("Pilih file terlebih dahulu!");
+      finalUrl = await compressImage(subFile.files[0]);
+    } else {
+      if (!subUrl.value.trim()) throw new Error("Masukkan Link URL yang valid!");
+      finalUrl = subUrl.value.trim();
+    }
 
     await addDoc(collection(db, "submissions"), {
-      submitterName: name,
-      deviceId: deviceId,
-      title: title,
-      description: desc,
-      category: category,
-      url: compressedBase64,
-      status: 'pending',
-      timestamp: serverTimestamp()
+      submitterName: name, deviceId: deviceId, title: title, description: desc,
+      category: category, url: finalUrl, status: 'pending', timestamp: serverTimestamp()
     });
 
-    alert("Pengajuan berhasil dikirim! Silakan tunggu konfirmasi Admin.");
+    window.showToast("Berhasil diajukan! Menunggu Acc.", "success");
     window.closeModal('submitModal');
     document.getElementById('submitForm').reset();
+    hiddenInputCat.value = ""; document.getElementById('customCatText').innerText = "-- Pilih Kategori --";
   } catch(err) { 
     console.error(err);
-    alert("Gagal upload! Pastikan Rules Firestore di-set allow read, write."); 
+    window.showToast(err.message || "Gagal upload, cek koneksi!", "error");
   } finally { 
     btn.disabled = false; 
     btn.innerHTML = "<i class='bx bx-cloud-upload'></i> Ajukan Foto"; 
@@ -288,21 +321,28 @@ document.getElementById('submitForm').onsubmit = async (e) => {
 };
 
 // ==========================================
-// ADMIN DASHBOARD
+// ADMIN CUSTOM PROMPT & DASHBOARD
 // ==========================================
-window.openAdminLogin = () => {
-  const pwd = prompt("Masukkan Password Admin Dashboard:");
+window.triggerAdminLogin = () => {
+  window.closeModal('menuModal');
+  document.getElementById('promptInput').value = "";
+  window.openModal('promptModal');
+};
+
+document.getElementById('btnPromptSubmit').onclick = () => {
+  const pwd = document.getElementById('promptInput').value;
   if(pwd === "admin123") { 
-    window.closeModal('menuModal');
+    window.closeModal('promptModal');
     window.openModal('adminModal');
     renderAdminDashboard();
-  } else if (pwd !== null) alert("Password Salah!");
+  } else {
+    window.showToast("Password Salah!", "error");
+  }
 };
 
 function renderAdminDashboard() {
   const pending = allPhotos.filter(p => p.status === 'pending');
   const list = document.getElementById('adminList');
-  
   if(pending.length === 0) {
     list.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center;">Tidak ada pengajuan baru.</p>';
     return;
@@ -329,22 +369,18 @@ function renderAdminDashboard() {
 window.handleModeration = async (docId, status, targetDeviceId, title) => {
   try {
     await updateDoc(doc(db, "submissions", docId), { status: status });
-    
     await addDoc(collection(db, "notifications"), {
-      deviceId: targetDeviceId,
-      message: `Pengajuan foto "${title}" Anda telah ${status === 'approved' ? 'DITERIMA' : 'DITOLAK'} oleh Admin.`,
-      status: status,
-      read: false,
-      timestamp: serverTimestamp()
+      deviceId: targetDeviceId, message: `Pengajuan "${title}" telah ${status === 'approved' ? 'DITERIMA' : 'DITOLAK'}.`,
+      status: status, read: false, timestamp: serverTimestamp()
     });
+    window.showToast("Aksi berhasil dieksekusi", "success");
   } catch(err) {
-    console.error(err);
-    alert("Terjadi kesalahan saat update status!");
+    window.showToast("Error update status!", "error");
   }
 };
 
 // ==========================================
-// VIEWER GAMBAR FULLSCREEN
+// VIEWER
 // ==========================================
 window.openViewer = (data) => {
   document.getElementById('viewerImage').src = data.url;
@@ -352,13 +388,11 @@ window.openViewer = (data) => {
   document.getElementById('viewerDesc').innerText = data.description || '';
   
   const btnLink = document.getElementById('btnDownloadLink');
-  btnLink.href = data.url;
-  btnLink.download = data.title.replace(/\s+/g, '_') + '.jpg';
+  btnLink.href = data.url; btnLink.download = data.title.replace(/\s+/g, '_') + '.jpg';
   
   document.getElementById('btnShare').onclick = () => {
     const text = `Lihat dokumentasi "${data.title}" di Maginti Album!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
-  
   window.openModal('viewerModal');
 };
