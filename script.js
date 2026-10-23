@@ -14,7 +14,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ==========================================
-// STATE GLOBAL & DEVICE ID
+// STATE GLOBAL & ICONS
 // ==========================================
 let deviceId = localStorage.getItem('maginti_device_id');
 if (!deviceId) {
@@ -23,9 +23,22 @@ if (!deviceId) {
 }
 let allPhotos = [];
 let currentCategory = "all";
-const defaultIcons = { "TK MAGINTI": "bx-book-reader", "SD NEGERI 1": "bx-building", "SMP NEGERI 1": "bx-buildings", "SMA NEGERI 2": "bx-graduation", "SUNSET SANRES": "bx-sun", "STREET VIEW": "bx-map-alt" };
+// Database Icon Vector Berdasarkan Makna Kata
+const defaultIcons = { 
+  "TK MAGINTI": "bx-book-reader", "SD NEGERI 1": "bx-building", "SD NEGERI 5": "bx-building-house",
+  "SMP NEGERI 1": "bx-buildings", "SMA NEGERI 2": "bx-graduation", 
+  "SUNSET SANRES": "bx-sun", "STREET VIEW": "bx-map-alt", "UMUM": "bx-category" 
+};
 
-// CEK STATUS ADMIN DARI SESSION
+function getCategoryIcon(catName) {
+  // Cek pencocokan parsial agar kategori baru tetap dapat icon mirip
+  const nameL = catName.toUpperCase();
+  for (const [key, icon] of Object.entries(defaultIcons)) {
+    if (nameL.includes(key)) return icon;
+  }
+  return "bx-folder"; // Default jika tidak ketemu
+}
+
 let isAdmin = localStorage.getItem('maginti_admin') === 'true';
 
 // ==========================================
@@ -57,7 +70,7 @@ document.getElementById('btnConfirmAction').onclick = () => {
 };
 
 // ==========================================
-// RENDER ADMIN UI OVERLAYS
+// ADMIN UI OVERLAYS
 // ==========================================
 function updateAdminUI() {
   const badge = document.getElementById('adminBadge');
@@ -76,69 +89,32 @@ function updateAdminUI() {
 }
 updateAdminUI();
 
-// ==========================================
-// ADMIN LOGIN & LOGOUT LOGIC
-// ==========================================
-window.triggerAdminLogin = () => {
-  closeModal('menuModal');
-  document.getElementById('promptInput').value = "";
-  openModal('promptModal');
-};
-
+window.triggerAdminLogin = () => { closeModal('menuModal'); document.getElementById('promptInput').value = ""; openModal('promptModal'); };
 document.getElementById('btnPromptSubmit').onclick = () => {
   const pwd = document.getElementById('promptInput').value;
   if(pwd === "admin123") { 
-    isAdmin = true;
-    localStorage.setItem('maginti_admin', 'true');
-    updateAdminUI();
-    renderGallery(); // Re-render gallery untuk memunculkan tombol Edit/Hapus
-    showToast("Berhasil masuk Mode Admin!", "success");
-    closeModal('promptModal');
-  } else {
-    showToast("Password Salah!", "error");
-  }
+    isAdmin = true; localStorage.setItem('maginti_admin', 'true'); updateAdminUI(); renderGallery(); showToast("Berhasil masuk Mode Admin!", "success"); closeModal('promptModal');
+  } else { showToast("Password Salah!", "error"); }
 };
-
 window.logoutAdmin = () => {
   showConfirm("Keluar Mode Admin?", "Hak akses akan dicabut dan kembali ke tampilan user biasa.", () => {
-    isAdmin = false;
-    localStorage.removeItem('maginti_admin');
-    updateAdminUI();
-    renderGallery();
-    showToast("Berhasil keluar dari Mode Admin.", "success");
-    closeModal('menuModal');
+    isAdmin = false; localStorage.removeItem('maginti_admin'); updateAdminUI(); renderGallery(); showToast("Berhasil keluar dari Mode Admin.", "success"); closeModal('menuModal');
   });
 };
 
-// ==========================================
-// ADMIN LOGS & ACTIONS
-// ==========================================
 async function recordAdminLog(actionLabel, detailText) {
-  try {
-    await addDoc(collection(db, "admin_logs"), {
-      action: actionLabel,
-      detail: detailText,
-      adminName: "HAMDI", // Nama admin fix
-      timestamp: serverTimestamp()
-    });
-  } catch(e) { console.error("Gagal catat log", e); }
+  try { await addDoc(collection(db, "admin_logs"), { action: actionLabel, detail: detailText, adminName: "HAMDI", timestamp: serverTimestamp() }); } catch(e) {}
 }
 
 window.openLogAktivitas = async () => {
   openModal('logModal');
   const list = document.getElementById('logList');
   list.innerHTML = `<p style="text-align:center; padding: 20px;"><i class='bx bx-loader bx-spin'></i> Memuat log...</p>`;
-  
   try {
     const qLog = query(collection(db, "admin_logs"), orderBy("timestamp", "desc"));
     const snapshot = await getDocs(qLog);
     list.innerHTML = '';
-    
-    if(snapshot.empty) {
-      list.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center;">Belum ada aktivitas.</p>';
-      return;
-    }
-    
+    if(snapshot.empty) { list.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center;">Belum ada aktivitas.</p>'; return; }
     snapshot.forEach(docSnap => {
       const l = docSnap.data();
       const time = l.timestamp ? l.timestamp.toDate().toLocaleString('id-ID') : 'Baru saja';
@@ -149,9 +125,7 @@ window.openLogAktivitas = async () => {
           <span style="font-size:11px; color:var(--text-muted);">${time} - Oleh: ${l.adminName}</span>
         </div>`;
     });
-  } catch(e) {
-    list.innerHTML = '<p style="color:#ef4444; font-size:14px; text-align:center;">Gagal memuat data log.</p>';
-  }
+  } catch(e) { list.innerHTML = '<p style="color:#ef4444; font-size:14px; text-align:center;">Gagal memuat data log.</p>'; }
 };
 
 // ==========================================
@@ -167,8 +141,7 @@ window.getOptimizedUrl = (url) => {
 
 window.handleImgError = (img, rawUrl) => {
   if (!img.dataset.retried) {
-    img.dataset.retried = "true";
-    img.src = rawUrl; 
+    img.dataset.retried = "true"; img.src = rawUrl; 
   } else {
     img.parentElement.classList.remove('skeleton');
     img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%231e293b"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="16" fill="%2394a3b8" font-family="sans-serif"%3EGagal Memuat%3C/text%3E%3C/svg%3E';
@@ -177,47 +150,36 @@ window.handleImgError = (img, rawUrl) => {
 };
 
 // ==========================================
-// BINDINGS MENU & NOTIFIKASI
+// BINDINGS & LISTENERS
 // ==========================================
 document.getElementById('btnMenu').onclick = () => openModal('menuModal');
 document.getElementById('btnNotif').onclick = () => { openModal('notifModal'); document.getElementById('notifBadge').style.display = 'none'; }
 
-let currentSlide = 0;
-const slides = document.querySelectorAll('.banner-slide');
-setInterval(() => {
-  slides[currentSlide].classList.remove('active');
-  currentSlide = (currentSlide + 1) % slides.length;
-  slides[currentSlide].classList.add('active');
-}, 4500);
+let currentSlide = 0; const slides = document.querySelectorAll('.banner-slide');
+setInterval(() => { slides[currentSlide].classList.remove('active'); currentSlide = (currentSlide + 1) % slides.length; slides[currentSlide].classList.add('active'); }, 4500);
 
 if (localStorage.getItem('maginti_theme') === 'light') document.body.classList.add('light-mode');
 document.getElementById('btnTheme').onclick = () => {
-  document.body.classList.toggle('light-mode');
-  localStorage.setItem('maginti_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+  document.body.classList.toggle('light-mode'); localStorage.setItem('maginti_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
 };
 
 // ==========================================
-// FIRESTORE LISTENER (GALERI)
+// FIRESTORE LISTENER (GALERI & DASHBOARD REALTIME)
 // ==========================================
 const qPhotos = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
 onSnapshot(qPhotos, (snapshot) => {
   allPhotos = [];
   snapshot.forEach(doc => allPhotos.push({ id: doc.id, ...doc.data() }));
-  renderGallery();
-  if(document.getElementById('adminAjuanModal').classList.contains('active')) renderAdminDashboard();
+  renderGallery(); 
+  renderAdminDashboard(); // Realtime trigger untuk daftar ajuan
 });
 
 const qNotif = query(collection(db, "notifications"), where("deviceId", "==", deviceId));
 onSnapshot(qNotif, (snapshot) => {
-  const list = document.getElementById('notifList');
-  list.innerHTML = '';
-  let unreadCount = 0;
-  let hasData = false;
-
+  const list = document.getElementById('notifList'); list.innerHTML = '';
+  let unreadCount = 0; let hasData = false;
   snapshot.forEach(docSnap => {
-    hasData = true;
-    const n = docSnap.data();
-    if(!n.read) unreadCount++;
+    hasData = true; const n = docSnap.data(); if(!n.read) unreadCount++;
     list.innerHTML += `
       <div class="admin-item" style="display:block; padding:16px; border-left: 4px solid ${n.status === 'approved' ? '#10b981' : '#ef4444'};">
         <p style="font-size:14px; margin-bottom:4px; font-weight: ${n.read ? 'normal' : 'bold'};">${n.message}</p>
@@ -228,17 +190,33 @@ onSnapshot(qNotif, (snapshot) => {
   document.getElementById('notifBadge').style.display = unreadCount > 0 ? 'block' : 'none';
 });
 
+// ==========================================
+// PENCARIAN PINTAR (TYPO-TOLERANT) & RENDER GALERI
+// ==========================================
+function isMatchSmart(text, query) {
+  if(!query) return true;
+  const t = text.toLowerCase(); const q = query.toLowerCase();
+  if(t.includes(q)) return true; // Exact match
+  
+  // Partial match: pecah kata query
+  const qWords = q.split(' ').filter(w => w.length > 2);
+  if(qWords.length > 0) {
+    return qWords.some(w => t.includes(w));
+  }
+  return false;
+}
+
 function renderGallery() {
   const approvedPhotos = allPhotos.filter(p => p.status === 'approved');
   const catNav = document.getElementById('categoryNav');
   const gallery = document.getElementById('galleryContainer');
-  const searchQ = document.getElementById('searchInput').value.toLowerCase();
+  const searchQ = document.getElementById('searchInput').value;
 
   const uniqueCats = [...new Set(approvedPhotos.map(p => p.category))];
   catNav.innerHTML = `<button class="cat-btn ${currentCategory === 'all' ? 'active' : ''}" data-cat="all"><i class='bx bx-grid-alt'></i> SEMUA</button>`;
   
   uniqueCats.forEach(cat => {
-    const icon = defaultIcons[cat.toUpperCase()] || 'bx-folder';
+    const icon = getCategoryIcon(cat);
     const isActive = currentCategory === cat ? 'active' : '';
     catNav.innerHTML += `<button class="cat-btn ${isActive}" data-cat="${cat}"><i class='bx ${icon}'></i> ${cat}</button>`;
   });
@@ -250,18 +228,18 @@ function renderGallery() {
   gallery.innerHTML = '';
   const filtered = approvedPhotos.filter(p => {
     const matchCat = currentCategory === 'all' || p.category === currentCategory;
-    const matchSearch = p.title.toLowerCase().includes(searchQ) || p.category.toLowerCase().includes(searchQ) || p.submitterName.toLowerCase().includes(searchQ);
+    const combinedText = `${p.title} ${p.category} ${p.submitterName}`;
+    const matchSearch = isMatchSmart(combinedText, searchQ);
     return matchCat && matchSearch;
   });
 
   if(filtered.length === 0) {
-    gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">Foto tidak ditemukan.</p>';
+    gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;"><i class="bx bx-search-alt" style="font-size:30px; margin-bottom:10px; display:block;"></i> Tidak ada hasil yang mirip dengan pencarian Anda.</p>';
   } else {
     filtered.forEach(p => {
       const card = document.createElement('div');
       card.className = 'card';
       
-      // LABEL BADGE PENGIRIM
       let badgeHtml = '';
       const nameL = p.submitterName.toLowerCase();
       if (nameL === 'admin system' || nameL === 'dev upload') {
@@ -270,7 +248,6 @@ function renderGallery() {
         badgeHtml = `<span class="badge badge-user"><i class='bx bxs-user'></i> By: ${p.submitterName}</span>`;
       }
 
-      // TOOLS ADMIN DI CARD (Hanya jika login)
       let adminTools = '';
       if(isAdmin) {
         adminTools = `
@@ -302,7 +279,7 @@ function renderGallery() {
 document.getElementById('searchInput').oninput = renderGallery;
 
 // ==========================================
-// EDIT & DELETE KONTEN (MODE ADMIN)
+// EDIT & DELETE (MODE ADMIN)
 // ==========================================
 window.triggerDelete = (docId, title) => {
   showConfirm("Hapus Konten?", `Lu yakin mau menghapus foto "${title}" dari galeri? Aksi ini permanen.`, async () => {
@@ -334,21 +311,15 @@ document.getElementById('editForm').onsubmit = async (e) => {
 
   try {
     btn.disabled = true; btn.innerHTML = "<i class='bx bx-loader bx-spin'></i> Menyimpan...";
-    await updateDoc(doc(db, "submissions", id), {
-      title: title, description: desc, category: cat
-    });
-    recordAdminLog("Edit Konten", `Memperbarui info foto menjadi "${title}" (Kategori: ${cat}).`);
-    showToast("Perubahan berhasil disimpan.", "success");
-    closeModal('editModal');
-  } catch(e) {
-    showToast("Gagal menyimpan perubahan.", "error");
-  } finally {
-    btn.disabled = false; btn.innerHTML = "<i class='bx bx-save'></i> Simpan Perubahan";
-  }
+    await updateDoc(doc(db, "submissions", id), { title: title, description: desc, category: cat });
+    recordAdminLog("Edit Konten", `Memperbarui info foto menjadi "${title}" (Kat: ${cat}).`);
+    showToast("Perubahan berhasil disimpan.", "success"); closeModal('editModal');
+  } catch(e) { showToast("Gagal menyimpan perubahan.", "error"); } 
+  finally { btn.disabled = false; btn.innerHTML = "<i class='bx bx-save'></i> Simpan Perubahan"; }
 };
 
 // ==========================================
-// FORM PENGAJUAN FOTO & KOMPRESI (TOGGLE TABS)
+// FORM PENGAJUAN (CHIP CATEGORY & TOGGLE)
 // ==========================================
 const btnTabFile = document.getElementById('btnTabFile');
 const btnTabUrl = document.getElementById('btnTabUrl');
@@ -357,48 +328,46 @@ const containerUrl = document.getElementById('inputUrlContainer');
 const subFile = document.getElementById('subFile');
 const subUrl = document.getElementById('subUrl');
 
-btnTabFile.onclick = () => {
-  btnTabFile.classList.add('active'); btnTabUrl.classList.remove('active');
-  containerFile.style.display = 'block'; containerUrl.style.display = 'none';
-  subFile.required = true; subUrl.required = false;
-};
-btnTabUrl.onclick = () => {
-  btnTabUrl.classList.add('active'); btnTabFile.classList.remove('active');
-  containerUrl.style.display = 'block'; containerFile.style.display = 'none';
-  subUrl.required = true; subFile.required = false;
-};
+btnTabFile.onclick = () => { btnTabFile.classList.add('active'); btnTabUrl.classList.remove('active'); containerFile.style.display = 'block'; containerUrl.style.display = 'none'; subFile.required = true; subUrl.required = false; };
+btnTabUrl.onclick = () => { btnTabUrl.classList.add('active'); btnTabFile.classList.remove('active'); containerUrl.style.display = 'block'; containerFile.style.display = 'none'; subUrl.required = true; subFile.required = false; };
 
-const catWrapper = document.getElementById('customCatWrapper');
-const catBtn = document.getElementById('customCatBtn');
-const catOptions = document.getElementById('customCatOptions');
-const catText = document.getElementById('customCatText');
 const hiddenInputCat = document.getElementById('subCategory');
 
-catBtn.onclick = () => catWrapper.classList.toggle('open');
-document.addEventListener('click', (e) => { if (!catWrapper.contains(e.target)) catWrapper.classList.remove('open'); });
-
-function populateCustomDropdown() {
+function populateCategoryGrid() {
+  const grid = document.getElementById('catGridSelector');
   const approvedPhotos = allPhotos.filter(p => p.status === 'approved');
   const uniqueCats = [...new Set(approvedPhotos.map(p => p.category))];
-  catOptions.innerHTML = `<div class="custom-option" data-value="">-- Pilih Kategori --</div>`;
-  uniqueCats.forEach(cat => { catOptions.innerHTML += `<div class="custom-option" data-value="${cat}">${cat}</div>`; });
-  document.querySelectorAll('.custom-option').forEach(opt => {
-    opt.onclick = () => { catText.innerText = opt.innerText; hiddenInputCat.value = opt.getAttribute('data-value'); catWrapper.classList.remove('open'); };
+  
+  grid.innerHTML = '';
+  uniqueCats.forEach(cat => {
+    const icon = getCategoryIcon(cat);
+    grid.innerHTML += `
+      <div class="cat-chip" data-value="${cat}">
+        <i class='bx ${icon}'></i>
+        <span class="cat-chip-name">${cat}</span>
+      </div>`;
+  });
+
+  const chips = document.querySelectorAll('.cat-chip');
+  chips.forEach(chip => {
+    chip.onclick = () => {
+      chips.forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      hiddenInputCat.value = chip.getAttribute('data-value');
+    };
   });
 }
 
 document.getElementById('btnAddPhoto').onclick = () => { 
   if(checkDailyLimit()) { window.showToast("Limit Tercapai! Maks. 3 upload per hari.", "error"); return; }
-  populateCustomDropdown();
+  populateCategoryGrid();
+  hiddenInputCat.value = ""; // Reset
   const savedName = localStorage.getItem('maginti_submitter_name');
   if(savedName) document.getElementById('subName').value = savedName;
   openModal('submitModal'); 
 }
 
-function checkDailyLimit() {
-  const today = new Date(); today.setHours(0, 0, 0, 0); 
-  return allPhotos.filter(p => p.deviceId === deviceId && (p.timestamp ? p.timestamp.toDate() : new Date()) >= today).length >= 3;
-}
+function checkDailyLimit() { const today = new Date(); today.setHours(0, 0, 0, 0); return allPhotos.filter(p => p.deviceId === deviceId && (p.timestamp ? p.timestamp.toDate() : new Date()) >= today).length >= 3; }
 
 function compressImage(file) {
   return new Promise((resolve, reject) => {
@@ -431,8 +400,7 @@ document.getElementById('submitForm').onsubmit = async (e) => {
   const btn = document.getElementById('btnSubmitForm');
   localStorage.setItem('maginti_submitter_name', name);
 
-  let finalUrl = "";
-  const isFile = btnTabFile.classList.contains('active');
+  let finalUrl = ""; const isFile = btnTabFile.classList.contains('active');
 
   try {
     btn.disabled = true; btn.innerHTML = "<i class='bx bx-loader bx-spin'></i> Memproses...";
@@ -450,26 +418,24 @@ document.getElementById('submitForm').onsubmit = async (e) => {
     });
 
     window.showToast("Berhasil diajukan! Menunggu acc admin.", "success");
-    closeModal('submitModal');
-    document.getElementById('submitForm').reset();
-    hiddenInputCat.value = ""; catText.innerText = "-- Pilih Kategori --";
+    closeModal('submitModal'); document.getElementById('submitForm').reset();
   } catch(err) { window.showToast(err.message || "Gagal upload, cek koneksi!", "error"); } 
   finally { btn.disabled = false; btn.innerHTML = "<i class='bx bx-cloud-upload'></i> Ajukan Foto"; }
 };
 
 // ==========================================
-// MODERASI ADMIN (TERIMA/TOLAK)
+// MODERASI ADMIN (REALTIME)
 // ==========================================
 function renderAdminDashboard() {
   const pending = allPhotos.filter(p => p.status === 'pending');
   const list = document.getElementById('adminList');
-  if(pending.length === 0) { list.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center;">Tidak ada pengajuan baru.</p>'; return; }
+  if(pending.length === 0) { list.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center; padding: 20px;">Tidak ada pengajuan baru.</p>'; return; }
   
   list.innerHTML = '';
   pending.forEach(p => {
     list.innerHTML += `
       <div class="admin-item">
-        <img src="${p.url}" onclick='window.openViewer(${JSON.stringify(p).replace(/"/g, "&quot;")})' style="cursor:pointer;" title="Preview Besar">
+        <img src="${p.url}" onclick='window.openViewer(${JSON.stringify(p).replace(/"/g, "&quot;")})' style="cursor:pointer;" title="Preview">
         <div class="admin-info">
           <h4>${p.title}</h4>
           <p>Oleh: ${p.submitterName} | Kat: ${p.category}</p>
@@ -496,10 +462,29 @@ window.handleModeration = async (docId, status, targetDeviceId, title) => {
 };
 
 // ==========================================
-// VIEWER FULL GAMBAR
+// VIEWER FULL GAMBAR DENGAN PRE-LOADER BUG FIX
 // ==========================================
 window.openViewer = (data) => {
-  document.getElementById('viewerImage').src = data.url;
+  const viewerImg = document.getElementById('viewerImage');
+  const loading = document.getElementById('viewerLoading');
+  const contentWrap = document.getElementById('viewerContent');
+  
+  // 1. Reset state agar tidak muncul gambar sebelumnya
+  viewerImg.style.display = 'none';
+  contentWrap.style.display = 'none';
+  loading.style.display = 'flex';
+  viewerImg.src = ""; 
+
+  // 2. Set event onload pada gambar
+  viewerImg.onload = () => {
+    loading.style.display = 'none';
+    viewerImg.style.display = 'block';
+    contentWrap.style.display = 'block';
+  };
+
+  // 3. Set URL gambar yang baru (memancing onload)
+  viewerImg.src = data.url;
+
   document.getElementById('viewerTitle').innerText = data.title;
   document.getElementById('viewerDesc').innerText = data.description || '';
   
