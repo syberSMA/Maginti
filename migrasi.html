@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Upload Data Maginti</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .container { background: #1e293b; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 500px; }
+    h1 { color: #3b82f6; margin-bottom: 10px; font-size: 24px; }
+    p { color: #94a3b8; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+    button { background: #10b981; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; width: 100%; }
+    button:hover { background: #059669; transform: translateY(-3px); }
+    button:disabled { background: #475569; cursor: not-allowed; transform: none; }
+    #log { margin-top: 20px; max-height: 200px; overflow-y: auto; background: #0b1120; padding: 15px; border-radius: 10px; text-align: left; font-size: 12px; font-family: monospace; color: #34d399; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Alat Migrasi Data</h1>
+    <p>Script ini akan mengunggah sekitar 100+ foto lama dari Maginti Album versi sebelumnya langsung ke database Firebase Firestore.</p>
+    <button id="btnStart">Mulai Upload Data (Sekali Klik Saja)</button>
+    <div id="log"></div>
+  </div>
+
+  <!-- CONTAINER TERSEMBUNYI BERISI DATA LAMA DARI INDEX_2.HTML -->
+  <div id="oldData" style="display: none;">
+    <div class="card" data-category="TK MAGINTI"><img src="https://files.catbox.moe/z09uur.jpg"><p class="card-title">TK MAGINTI</p></div>
+    
+    <div class="card" data-category="SD NEGERI 1 MGT"><img src="https://files.catbox.moe/stkj9v.png"><p class="card-title">FOTO KEGIATAN SD 1</p></div>
+    <div class="card" data-category="SD NEGERI 1 MGT"><img src="https://files.catbox.moe/ys8lnv.png"><p class="card-title">FOTO KEGIATAN SD 1</p></div>
+    <div class="card" data-category="SD NEGERI 1 MGT"><img src="https://files.catbox.moe/lpzvy2.png"><p class="card-title">FOTO KEGIATAN SD 1</p></div>
+    <div class="card" data-category="SD NEGERI 5 MGT"><img src="https://files.catbox.moe/orek3p.png"><p class="card-title">FOTO KEGIATAN SD 5</p></div>
+    <div class="card" data-category="SD NEGERI 5 MGT"><img src="https://files.catbox.moe/au1q1s.png"><p class="card-title">FOTO KEGIATAN SD 5</p></div>
+
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/zfy48f.webp"><p class="card-title">RUMAH DINAS SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/lu66y7.webp"><p class="card-title">UPACARA BERSAMA</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/8vsuf9.webp"><p class="card-title">GERBANG SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/7a4eby.png"><p class="card-title">KANTOR SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/wuop5w.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/db8al4.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/x5bt0y.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/rfetje.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/944hqq.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/odwmi4.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/yvdkks.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/hgmyo7.jpg"><p class="card-title">SMP NEGERI 1</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/swpm6c.jpg"><p class="card-title">FOTO SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/307m3t.jpg"><p class="card-title">FOTO SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/pmvv5r.jpg"><p class="card-title">FOTO SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/lcp2xr.png"><p class="card-title">FOTO SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/dmqsol.png"><p class="card-title">FOTO SMP</p></div>
+    <div class="card" data-category="SMP NEGERI 1 MGT"><img src="https://files.catbox.moe/gc6tob.png"><p class="card-title">FOTO SMP</p></div>
+
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/p9xa4t.jpg"><p class="card-title">MPLS</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/8831m7.jpg"><p class="card-title">MPLS</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/jqcxh4.jpg"><p class="card-title">MPLS</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/p6gu3p.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/g4plxv.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/2jucqh.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/xqy5a2.png"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/co4and.png"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/xfa51t.png"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/b1wtzb.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/3lmxec.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/zszkhm.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/t2r808.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/zc6bai.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/vmxk3f.jpg"><p class="card-title">MPLS 2026</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/tr3vu6.jpg"><p class="card-title">KARTU PENGENAL SISWA [KTP PINK]</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/5qewcc.jpg"><p class="card-title">SMA NEGERI 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/xitmsh.jpg"><p class="card-title">UPACARA</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/n91mc0.jpg"><p class="card-title">GURU SMA</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/1bghop.jpg"><p class="card-title">SMA</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/bqc41w.jpg"><p class="card-title">SMA</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/4lm1b6.png"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/zinu9w.png"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/wrs0hy.png"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/ky9pu7.jpg"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/40ifl2.jpg"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/unqq8i.png"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/iea3q1.png"><p class="card-title">FOTO SMA 2</p></div>
+    <div class="card" data-category="SMA NEGERI 2 MGT"><img src="https://files.catbox.moe/e776fz.png"><p class="card-title">FOTO SMA 2</p></div>
+
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/7asfdd.jpg"><p class="card-title">SUNSET 1</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/7wdq0d.jpg"><p class="card-title">SUNSET 2</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/ssf4lv.jpg"><p class="card-title">SUNSET 3</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/td02kv.jpg"><p class="card-title">SUNSET 4</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/xbzykz.jpg"><p class="card-title">SUNSET 5</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/9o5svd.jpg"><p class="card-title">SUNSET 6</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/f9s0p7.jpg"><p class="card-title">SUNSET 7</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/xmrpgh.jpg"><p class="card-title">SUNSET 8</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/vmpxxu.jpg"><p class="card-title">SUNSET 9</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/v8apb0.jpg"><p class="card-title">SUNSET 10</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/k8ptv0.jpg"><p class="card-title">SUNSET 11</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/o4jerm.jpg"><p class="card-title">SUNSET 12</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/k3s2if.jpg"><p class="card-title">SUNSET 13</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/yaklxo.jpg"><p class="card-title">SUNSET 14</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/7buult.jpg"><p class="card-title">SUNSET 15</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/kowvwf.jpg"><p class="card-title">SUNSET 16</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/sea5f9.jpg"><p class="card-title">SUNSET 17</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/lhevuq.jpg"><p class="card-title">SUNSET 18</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/y8exhn.jpg"><p class="card-title">SUNSET 19</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/a3j8v7.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/c4vdsq.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/tgupph.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/ji6asl.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/hq9fuo.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/o5vbo3.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/i4x0wu.png"><p class="card-title">SUNSET</p></div>
+    <div class="card" data-category="SUNSET SANRES"><img src="https://files.catbox.moe/lhmm63.png"><p class="card-title">SUNSET</p></div>
+
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/jm1a9o.jpg"><p class="card-title">STREET VIEW 1</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/id9usj.jpg"><p class="card-title">STREET VIEW 2</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/r84dq4.jpg"><p class="card-title">STREET VIEW 3</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/0v3o81.jpg"><p class="card-title">STREET VIEW 4</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/jxi4pv.jpg"><p class="card-title">STREET VIEW 5</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/tssoeq.jpg"><p class="card-title">STREET VIEW 6</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/6qrzrn.jpg"><p class="card-title">STREET VIEW 7</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/nv7x22.jpg"><p class="card-title">STREET VIEW 8</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/1rkhck.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/q3ihop.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/q31sl4.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/a96jn7.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/3jryq8.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/sq8oga.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/4qgfq1.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/xhxm18.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/z51zbp.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/zxaype.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/6tuppt.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/csk6gl.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/576avu.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/47f31z.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/aohobp.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/02gslf.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/4uhnr3.png"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/fq6sdh.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/doc9va.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/8g314p.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/yfards.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/sejytj.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/xh0z5y.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/k77au5.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/spvxfa.jpg"><p class="card-title">STREET VIEW</p></div>
+    <div class="card" data-category="STREET VIEW"><img src="https://files.catbox.moe/zdjk7l.jpg"><p class="card-title">STREET VIEW</p></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJA-HphBU3-egRvAdcYdzTB_Bf9-mnjZY",
+      authDomain: "bankbendahara.firebaseapp.com",
+      projectId: "bankbendahara",
+      storageBucket: "bankbendahara.firebasestorage.app",
+      messagingSenderId: "87938401504",
+      appId: "1:87938401504:web:9da3e9ca0eaf1f6ad27c85"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const btnStart = document.getElementById('btnStart');
+    const logBox = document.getElementById('log');
+
+    function logMessage(msg) {
+      logBox.style.display = 'block';
+      logBox.innerHTML += `<div>${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Kasih jeda biar Firestore tidak error limit request
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    btnStart.addEventListener('click', async () => {
+      if(!confirm("Yakin mau memindahkan semua data ini ke Firestore?")) return;
+      
+      btnStart.disabled = true;
+      btnStart.innerText = "Sedang Memproses...";
+      
+      const cards = document.querySelectorAll('#oldData .card');
+      logMessage(`Ditemukan ${cards.length} data foto. Memulai upload...`);
+
+      for(let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const category = card.getAttribute('data-category');
+        const imgUrl = card.querySelector('img').getAttribute('src');
+        const title = card.querySelector('.card-title').innerText;
+
+        try {
+          await addDoc(collection(db, "submissions"), {
+            submitterName: "Admin System",
+            deviceId: "auto_migrator",
+            title: title,
+            description: "Data lama dari versi awal web",
+            category: category,
+            url: imgUrl, 
+            status: "approved", // Langsung setujui agar tampil di web
+            timestamp: serverTimestamp()
+          });
+          logMessage(`[${i+1}/${cards.length}] ✅ Berhasil: ${title}`);
+          await delay(200); // Jeda 0.2 detik per data biar stabil
+        } catch (error) {
+          logMessage(`[${i+1}/${cards.length}] ❌ Gagal: ${title} - ${error.message}`);
+        }
+      }
+
+      btnStart.innerText = "Migrasi Selesai!";
+      logMessage("🎉 MANTAP BRO! Semua data berhasil pindah ke Firebase Firestore!");
+      alert("Proses Selesai! Buka halaman utama web lu buat ngecek hasilnya.");
+    });
+  </script>
+</body>
+</html>
