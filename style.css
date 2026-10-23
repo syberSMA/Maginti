@@ -1,3 +1,16 @@
+/* 1. HILANGKAN TAP HIGHLIGHT & RESET */
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  -webkit-tap-highlight-color: transparent; 
+}
+
+button, a, input, select, .card, .cat-btn, .icon-btn, .fab {
+  outline: none;
+  -webkit-touch-callout: none;
+}
+
 /* VARIABEL WARNA & TEMA */
 :root {
   --bg-1: #0f172a; --bg-2: #1e3a8a;
@@ -22,7 +35,6 @@ body.light-mode {
   --body-bg: linear-gradient(135deg, var(--bg-2), var(--bg-1));
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: 'Segoe UI', Roboto, sans-serif; }
 body { color: var(--text-main); background: var(--body-bg); background-attachment: fixed; transition: background 0.3s ease; }
 body.no-scroll { overflow: hidden !important; }
@@ -88,7 +100,40 @@ body.no-scroll { overflow: hidden !important; }
   cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; box-shadow: var(--shadow);
 }
 .card:hover { transform: translateY(-5px); border-color: var(--brand); box-shadow: 0 15px 35px rgba(0,0,0,.25); }
-.card img { width: 100%; height: 180px; object-fit: cover; display: block; }
+
+/* 2. SKELETON LOADING & KESTABILAN LAYOUT */
+.img-wrapper {
+  width: 100%;
+  height: 180px; 
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+body.light-mode .skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
+  background-size: 200% 100%;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* 3. TRANSISI FADE-IN GAMBAR YANG SMOOTH */
+.card img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  display: block;
+  opacity: 0; 
+  transition: opacity 0.5s ease-in-out;
+  transform: translateZ(0); 
+  will-change: opacity;
+}
+.card img.loaded { opacity: 1; }
+
 .card-body { padding: 12px; }
 .card-title { font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-meta { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 4px; }
