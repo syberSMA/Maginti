@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAGINTI ALBUM</title>
+  
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+  <style>
+    /* VARIABEL WARNA & TEMA */
+    :root {
+      --bg-1: #0f172a; --bg-2: #1e3a8a;
+      --card-bg: rgba(15,23,42,.7);
+      --card-border: rgba(255,255,255,.1);
+      --text-main: #e2e8f0; --text-muted: #94a3b8;
+      --input-bg: rgba(15,23,42,.8);
+      --modal-bg: rgba(15, 23, 42, 0.96);
+      --brand: #3b82f6; --brand-hover: #2563eb;
+      --shadow: 0 10px 30px rgba(0,0,0,.2);
+      --radius-lg: 20px;
+      --body-bg: linear-gradient(135deg, var(--bg-2), var(--bg-1));
+    }
+
+    body.light-mode {
+      --bg-1: #f8fafc; --bg-2: #dbeafe;
+      --card-bg: rgba(255,255,255,.9);
+      --card-border: rgba(0,0,0,.08);
+      --text-main: #0f172a; --text-muted: #475569;
+      --input-bg: rgba(255,255,255,.9);
+      --modal-bg: rgba(255, 255, 255, 0.98);
+      --body-bg: linear-gradient(135deg, var(--bg-2), var(--bg-1));
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Segoe UI', Roboto, sans-serif; }
+    body { color: var(--text-main); background: var(--body-bg); background-attachment: fixed; transition: background 0.3s ease; }
+    body.no-scroll { overflow: hidden !important; }
+
+    .container { width: min(1200px, calc(100% - 32px)); margin: 0 auto; padding-bottom: 90px; }
+    
+    .header {
+      padding: 20px; border-radius: var(--radius-lg); background: var(--brand); color: #fff;
+      display: flex; align-items: center; gap: 16px; margin: 20px 0; box-shadow: var(--shadow);
+    }
+    .header img { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; }
+    .header h1 { font-size: 24px; margin-bottom: 4px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+
+    .banner-container {
+      aspect-ratio: 16 / 7; width: 100%; position: relative; border-radius: var(--radius-lg);
+      overflow: hidden; margin-bottom: 20px; box-shadow: var(--shadow); background: #000;
+    }
+    .banner-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; }
+    .banner-slide.active { opacity: 1; }
+    .banner-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .corner-controls { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 1000; }
+    .icon-btn {
+      width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--card-bg);
+      color: var(--text-main); font-size: 22px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; backdrop-filter: blur(10px); border: 1px solid var(--card-border); box-shadow: var(--shadow);
+      transition: all 0.2s;
+    }
+    .icon-btn:hover { background: var(--brand); color: #fff; transform: translateY(-2px); }
+
+    .input-field {
+      width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--card-border);
+      background: var(--input-bg); color: var(--text-main); font-size: 15px; margin-bottom: 16px; outline: none;
+    }
+    .input-field:focus { border-color: var(--brand); }
+    .btn-primary {
+      width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--brand);
+      color: #fff; font-weight: bold; cursor: pointer; transition: background 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { background: var(--brand-hover); }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+    
+    .btn-outline {
+      padding: 10px 20px; border: 1px solid var(--card-border); background: var(--card-bg);
+      color: var(--text-main); border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-outline:hover { background: rgba(59, 130, 246, 0.15); border-color: var(--brand); }
+
+    .search-box { width: 100%; margin-bottom: 16px; }
+    .category-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
+    .category-container::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 30px;
+      border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main);
+      cursor: pointer; white-space: nowrap; font-weight: 600; transition: all 0.2s; scroll-snap-align: start;
+    }
+    .cat-btn.active, .cat-btn:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 10px; }
+    .card {
+      background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border);
+      cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; box-shadow: var(--shadow);
+    }
+    .card:hover { transform: translateY(-5px); border-color: var(--brand); box-shadow: 0 15px 35px rgba(0,0,0,.25); }
+    .card img { width: 100%; height: 180px; object-fit: cover; display: block; }
+    .card-body { padding: 12px; }
+    .card-title { font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 4px; }
+
+    .fab {
+      position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
+      background: var(--brand); color: white; border-radius: 50%; font-size: 30px;
+      display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+      cursor: pointer; z-index: 100; transition: transform 0.2s;
+    }
+    .fab:hover { transform: scale(1.1); background: var(--brand-hover); }
+
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+      display: flex; justify-content: center; align-items: center; z-index: 2000;
+      opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 20px;
+    }
+    .overlay.active { opacity: 1; visibility: visible; }
+    .modal-content {
+      background: var(--modal-bg); width: 100%; max-width: 500px; border-radius: var(--radius-lg);
+      padding: 24px; border: 1px solid var(--card-border); position: relative; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .close-modal { position: absolute; top: 20px; right: 20px; font-size: 28px; cursor: pointer; color: var(--text-muted); transition: color 0.2s; }
+    .close-modal:hover { color: #ef4444; }
+
+    .admin-list { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .admin-item { background: var(--card-bg); padding: 12px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; gap: 12px; align-items: center; }
+    .admin-item img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+    .admin-info { flex: 1; }
+    .admin-info h4 { font-size: 14px; margin-bottom: 4px; }
+    .admin-info p { font-size: 12px; color: var(--text-muted); margin: 0; }
+    .admin-actions { display: flex; gap: 8px; }
+    .btn-acc { background: #10b981; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; display:flex; align-items:center; }
+    .btn-rej { background: #ef4444; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; display:flex; align-items:center; }
+    .notif-badge { position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; background: #ef4444; border-radius: 50%; display: none; }
+
+    .viewer-img { max-width: 100%; max-height: 65vh; border-radius: 12px; object-fit: contain; margin: 20px auto; display: block; }
+    .viewer-actions-bar { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+
+    @media (max-width: 640px) {
+      .header h1 { font-size: 20px; }
+      .gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .fab { bottom: 20px; right: 20px; }
+      .banner-container { aspect-ratio: 16 / 9; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="mainApp">
+    <div class="corner-controls">
+      <button class="icon-btn" id="btnTheme" title="Ganti Tema"><i class='bx bx-moon'></i></button>
+      <button class="icon-btn" id="btnNotif" title="Notifikasi" style="position: relative;">
+        <i class='bx bx-bell'></i><span class="notif-badge" id="notifBadge"></span>
+      </button>
+      <button class="icon-btn" id="btnMenu" title="Menu"><i class='bx bx-menu'></i></button>
+    </div>
+
+    <div class="container">
+      <header class="header">
+        <img src="https://files.catbox.moe/8xa1ha.png" alt="Logo" />
+        <div>
+          <h1>MAGINTI ALBUM</h1>
+          <p>Galeri Digital Pulau Maginti</p>
+        </div>
+      </header>
+
+      <section class="banner-container">
+        <div class="banner-slide active"><img src="https://files.catbox.moe/jcud5a.png" alt="Banner 1" /></div>
+        <div class="banner-slide"><img src="https://files.catbox.moe/reqrry.png" alt="Banner 2" /></div>
+      </section>
+
+      <input type="text" id="searchInput" class="input-field search-box" placeholder="Cari berdasarkan judul atau kategori..." autocomplete="off" />
+
+      <div class="category-container" id="categoryNav">
+        <button class="cat-btn active" data-cat="all"><i class='bx bx-grid-alt'></i> SEMUA</button>
+      </div>
+
+      <div class="gallery" id="galleryContainer">
+        <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;"><i class='bx bx-loader bx-spin'></i> Memuat galeri...</p>
+      </div>
+    </div>
+
+    <div class="fab" id="btnAddPhoto" title="Ajukan Foto Baru"><i class='bx bx-plus'></i></div>
+  </div>
+
+  <div class="overlay" id="menuModal">
+    <div class="modal-content">
+      <i class='bx bx-x close-modal' onclick="closeModal('menuModal')"></i>
+      <h2 style="margin-bottom: 20px;">Navigasi Utama</h2>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <a href="https://wa.me/6285137258944" target="_blank" class="btn-outline" style="text-decoration: none;"><i class='bx bxl-whatsapp' style="color:#25D366; font-size:20px;"></i> Hubungi Developer</a>
+        <button class="btn-outline" onclick="openInfo()"><i class='bx bx-info-circle' style="font-size:20px;"></i> Info Web</button>
+        <hr style="border: 1px solid var(--card-border); margin: 10px 0;">
+        <button class="btn-outline" onclick="openAdminLogin()" style="color: #ef4444; border-color: rgba(239,68,68,0.3); justify-content: space-between;">
+          <span style="display:flex; align-items:center; gap:8px;"><i class='bx bx-shield-quarter' style="font-size:20px;"></i> Login Admin Dashboard</span>
+          <i class='bx bx-chevron-right'></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="infoModal">
+    <div class="modal-content">
+      <i class='bx bx-x close-modal' onclick="closeModal('infoModal')"></i>
+      <h2 style="margin-bottom: 16px; color: var(--brand);">Tentang Web</h2>
+      <p style="margin-bottom: 12px; line-height: 1.6; font-size: 15px;">MAGINTI ALBUM adalah platform galeri digital eksklusif yang didedikasikan untuk mengarsipkan dokumentasi visual seputar kegiatan dan momen berharga di Pulau Maginti.</p>
+      <div style="background: var(--card-bg); padding: 14px; border-radius: 12px; border: 1px solid var(--card-border); text-align: center; font-weight: bold; margin-top: 20px;">
+        web Developer : HAMDI
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="submitModal">
+    <div class="modal-content">
+      <i class='bx bx-x close-modal' onclick="closeModal('submitModal')"></i>
+      <h2 style="margin-bottom: 8px;">Ajukan Foto Baru</h2>
+      <p style="font-size: 12px; color: #ef4444; margin-bottom: 16px; font-weight: bold;">(Limit: Maksimal 3 upload per hari)</p>
+      <form id="submitForm">
+        <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">Nama Anda (Pengaju)</label>
+        <input type="text" id="subName" class="input-field" placeholder="Masukkan nama..." required autocomplete="off" />
+
+        <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">Judul Gambar</label>
+        <input type="text" id="subTitle" class="input-field" placeholder="Judul..." required autocomplete="off" />
+        
+        <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">Deskripsi Singkat</label>
+        <input type="text" id="subDesc" class="input-field" placeholder="Deskripsi foto..." required autocomplete="off" />
+
+        <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">Kategori (Pilih atau Buat Baru)</label>
+        <div style="display:flex; gap:10px; margin-bottom: 16px;">
+          <select id="subCategory" class="input-field" style="margin-bottom: 0;"></select>
+          <input type="text" id="subNewCategory" class="input-field" placeholder="Kategori Baru..." style="margin-bottom: 0;" autocomplete="off" />
+        </div>
+
+        <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">File Gambar (Akan dikompres otomatis)</label>
+        <input type="file" id="subFile" class="input-field" accept="image/*" required />
+
+        <button type="submit" class="btn-primary" id="btnSubmitForm"><i class='bx bx-cloud-upload' style="font-size: 20px;"></i> Ajukan Foto</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="adminModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <i class='bx bx-x close-modal' onclick="closeModal('adminModal')"></i>
+      <h2 style="margin-bottom: 8px;"><i class='bx bx-shield-quarter'></i> Dashboard Admin</h2>
+      <p style="font-size: 13px; color: var(--text-muted);">Daftar pengajuan foto yang menunggu persetujuan (Status: Pending).</p>
+      <div class="admin-list" id="adminList"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="notifModal">
+    <div class="modal-content">
+      <i class='bx bx-x close-modal' onclick="closeModal('notifModal')"></i>
+      <h2 style="margin-bottom: 16px;"><i class='bx bx-bell'></i> Notifikasi Saya</h2>
+      <div class="admin-list" id="notifList"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="viewerModal">
+    <div class="modal-content" style="max-width: 800px; background: transparent; border: none; box-shadow: none;">
+      <i class='bx bx-x close-modal' onclick="closeModal('viewerModal')" style="color: #fff; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px;"></i>
+      <img id="viewerImage" src="" class="viewer-img" />
+      <h3 id="viewerTitle" style="text-align: center; color: white; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.8);"></h3>
+      <p id="viewerDesc" style="text-align: center; color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 16px;"></p>
+      
+      <div class="viewer-actions-bar">
+        <a id="btnDownloadLink" href="#" download="maginti_album.jpg" class="btn-outline" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); font-weight: bold; text-decoration: none;"><i class='bx bx-download' style="font-size: 20px;"></i> Download</a>
+        <button class="btn-outline" id="btnShare" style="background: #10b981; color: white; border: none; font-weight: bold;"><i class='bx bxl-whatsapp' style="font-size: 20px;"></i> Bagikan via WA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK V9 MODULAR (HANYA FIRESTORE) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJA-HphBU3-egRvAdcYdzTB_Bf9-mnjZY",
+      authDomain: "bankbendahara.firebaseapp.com",
+      projectId: "bankbendahara",
+      storageBucket: "bankbendahara.firebasestorage.app",
+      messagingSenderId: "87938401504",
+      appId: "1:87938401504:web:9da3e9ca0eaf1f6ad27c85"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ==========================================
+    // IDENTITAS DEVICE
+    // ==========================================
+    let deviceId = localStorage.getItem('maginti_device_id');
+    if (!deviceId) {
+      deviceId = 'device_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('maginti_device_id', deviceId);
+    }
+
+    let allPhotos = [];
+    let currentCategory = "all";
+    const defaultIcons = { "TK MAGINTI": "bx-book-reader", "SD NEGERI 1": "bx-building", "SMP NEGERI 1": "bx-buildings", "SMA NEGERI 2": "bx-graduation", "SUNSET SANRES": "bx-sun", "STREET VIEW": "bx-map-alt" };
+
+    window.openModal = (id) => { document.getElementById(id).classList.add('active'); document.body.classList.add('no-scroll'); }
+    window.closeModal = (id) => { document.getElementById(id).classList.remove('active'); document.body.classList.remove('no-scroll'); }
+    window.openInfo = () => { closeModal('menuModal'); openModal('infoModal'); }
+    
+    document.getElementById('btnMenu').onclick = () => openModal('menuModal');
+    document.getElementById('btnNotif').onclick = () => { openModal('notifModal'); document.getElementById('notifBadge').style.display = 'none'; }
+    
+    document.getElementById('btnAddPhoto').onclick = () => { 
+      // CEK LIMIT HARIAN SAAT MAU BUKA FORM
+      if(checkDailyLimit()) {
+          alert("Limit Tercapai! Lu udah kirim 3 foto hari ini, Bro. Besok lagi ya!");
+          return;
+      }
+      populateCategoryDropdown();
+      const savedName = localStorage.getItem('maginti_submitter_name');
+      if(savedName) document.getElementById('subName').value = savedName;
+      openModal('submitModal'); 
+    }
+
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.banner-slide');
+    setInterval(() => {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = (currentSlide + 1) % slides.length;
+      slides[currentSlide].classList.add('active');
+    }, 4500);
+
+    if (localStorage.getItem('maginti_theme') === 'light') document.body.classList.add('light-mode');
+    document.getElementById('btnTheme').onclick = () => {
+      document.body.classList.toggle('light-mode');
+      localStorage.setItem('maginti_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+    };
+
+    // ==========================================
+    // LISTENER FIRESTORE (GALERI)
+    // ==========================================
+    const qPhotos = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
+    onSnapshot(qPhotos, (snapshot) => {
+      allPhotos = [];
+      snapshot.forEach(doc => allPhotos.push({ id: doc.id, ...doc.data() }));
+      renderGallery();
+      if(document.getElementById('adminModal').classList.contains('active')) renderAdminDashboard();
+    });
+
+    const qNotif = query(collection(db, "notifications"), where("deviceId", "==", deviceId));
+    onSnapshot(qNotif, (snapshot) => {
+      const list = document.getElementById('notifList');
+      list.innerHTML = '';
+      let unreadCount = 0;
+      let hasData = false;
+
+      snapshot.forEach(docSnap => {
+        hasData = true;
+        const n = docSnap.data();
+        if(!n.read) unreadCount++;
+        
+        list.innerHTML += `
+          <div class="admin-item" style="display:block; padding:16px; border-left: 4px solid ${n.status === 'approved' ? '#10b981' : '#ef4444'};">
+            <p style="font-size:14px; margin-bottom:4px; font-weight: ${n.read ? 'normal' : 'bold'};">${n.message}</p>
+            <span style="font-size:11px; color:var(--text-muted);">${n.timestamp ? n.timestamp.toDate().toLocaleString('id-ID') : 'Baru saja'}</span>
+          </div>`;
+      });
+      if(!hasData) list.innerHTML = '<p style="color:var(--text-muted); font-size:14px;">Belum ada notifikasi.</p>';
+      document.getElementById('notifBadge').style.display = unreadCount > 0 ? 'block' : 'none';
+    });
+
+    function renderGallery() {
+      const approvedPhotos = allPhotos.filter(p => p.status === 'approved');
+      const catNav = document.getElementById('categoryNav');
+      const gallery = document.getElementById('galleryContainer');
+      const searchQ = document.getElementById('searchInput').value.toLowerCase();
+
+      const uniqueCats = [...new Set(approvedPhotos.map(p => p.category))];
+      catNav.innerHTML = `<button class="cat-btn ${currentCategory === 'all' ? 'active' : ''}" data-cat="all"><i class='bx bx-grid-alt'></i> SEMUA</button>`;
+      
+      uniqueCats.forEach(cat => {
+        const icon = defaultIcons[cat.toUpperCase()] || 'bx-folder';
+        const isActive = currentCategory === cat ? 'active' : '';
+        catNav.innerHTML += `<button class="cat-btn ${isActive}" data-cat="${cat}"><i class='bx ${icon}'></i> ${cat}</button>`;
+      });
+
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.onclick = (e) => { currentCategory = e.currentTarget.dataset.cat; renderGallery(); }
+      });
+
+      gallery.innerHTML = '';
+      const filtered = approvedPhotos.filter(p => {
+        const matchCat = currentCategory === 'all' || p.category === currentCategory;
+        const matchSearch = p.title.toLowerCase().includes(searchQ) || p.category.toLowerCase().includes(searchQ) || p.submitterName.toLowerCase().includes(searchQ);
+        return matchCat && matchSearch;
+      });
+
+      if(filtered.length === 0) {
+        gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">Foto tidak ditemukan.</p>';
+      } else {
+        filtered.forEach(p => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <img src="${p.url}" alt="${p.title}" loading="lazy">
+            <div class="card-body">
+              <div class="card-title">${p.title}</div>
+              <div class="card-meta"><span>${p.category}</span> <span>By: ${p.submitterName}</span></div>
+            </div>`;
+          card.onclick = () => openViewer(p);
+          gallery.appendChild(card);
+        });
+      }
+    }
+    document.getElementById('searchInput').oninput = renderGallery;
+
+    // ==========================================
+    // FUNGSI CEK LIMIT (3X PER HARI)
+    // ==========================================
+    function checkDailyLimit() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set ke awal hari (jam 00:00)
+      
+      const myUploadsToday = allPhotos.filter(p => {
+        if(p.deviceId !== deviceId) return false;
+        // Ambil timestamp dari firebase atau jika belum ter-sync (baru dikirim), pakai waktu saat ini
+        const docDate = p.timestamp ? p.timestamp.toDate() : new Date();
+        return docDate >= today;
+      });
+
+      return myUploadsToday.length >= 3;
+    }
+
+    // ==========================================
+    // FUNGSI KOMPRESI GAMBAR (CANVAS)
+    // ==========================================
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const MAX_SIZE = 800; // Maksimal lebar/tinggi 800px
+
+            if (width > height && width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            } else if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Kompres ke JPEG dengan kualitas 0.6 (~60%) agar Base64 ukurannya kecil aman masuk Firestore
+            const base64Str = canvas.toDataURL('image/jpeg', 0.6);
+            resolve(base64Str);
+          };
+        };
+        reader.onerror = (error) => reject(error);
+      });
+    }
+
+    // ==========================================
+    // SUBMIT FORM
+    // ==========================================
+    function populateCategoryDropdown() {
+      const approvedPhotos = allPhotos.filter(p => p.status === 'approved');
+      const uniqueCats = [...new Set(approvedPhotos.map(p => p.category))];
+      const select = document.getElementById('subCategory');
+      select.innerHTML = '<option value="">-- Pilih Kategori --</option>';
+      uniqueCats.forEach(cat => select.innerHTML += `<option value="${cat}">${cat}</option>`);
+    }
+
+    document.getElementById('submitForm').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      // Keamanan ganda, cek limit sekali lagi pas klik tombol submit
+      if(checkDailyLimit()) {
+          alert("Gagal kirim! Lu udah kirim 3 foto hari ini.");
+          closeModal('submitModal');
+          return;
+      }
+
+      const name = document.getElementById('subName').value.trim();
+      const title = document.getElementById('subTitle').value.trim();
+      const desc = document.getElementById('subDesc').value.trim();
+      const catSelect = document.getElementById('subCategory').value;
+      const catNew = document.getElementById('subNewCategory').value.trim();
+      const category = (catNew || catSelect || "UMUM").toUpperCase();
+      const fileInput = document.getElementById('subFile');
+      const btn = document.getElementById('btnSubmitForm');
+
+      localStorage.setItem('maginti_submitter_name', name);
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = "<i class='bx bx-loader bx-spin'></i> Memproses & Mengunggah...";
+
+        const file = fileInput.files[0];
+        // Jalankan Kompresi
+        const compressedBase64 = await compressImage(file);
+
+        await addDoc(collection(db, "submissions"), {
+          submitterName: name,
+          deviceId: deviceId,
+          title: title,
+          description: desc,
+          category: category,
+          url: compressedBase64, // Simpan Teks Base64 Panjang Langsung ke Firestore
+          status: 'pending',
+          timestamp: serverTimestamp()
+        });
+
+        alert("Pengajuan berhasil dikirim! Silakan tunggu konfirmasi Admin.");
+        closeModal('submitModal');
+        document.getElementById('submitForm').reset();
+      } catch(err) { 
+        console.error(err);
+        alert("Gagal upload! Pastikan Rules Firestore di-set allow read, write."); 
+      } finally { 
+        btn.disabled = false; 
+        btn.innerHTML = "<i class='bx bx-cloud-upload'></i> Ajukan Foto"; 
+      }
+    };
+
+    // ==========================================
+    // ADMIN DASHBOARD
+    // ==========================================
+    window.openAdminLogin = () => {
+      const pwd = prompt("Masukkan Password Admin Dashboard:");
+      if(pwd === "admin123") { 
+        closeModal('menuModal');
+        openModal('adminModal');
+        renderAdminDashboard();
+      } else if (pwd !== null) alert("Password Salah!");
+    };
+
+    function renderAdminDashboard() {
+      const pending = allPhotos.filter(p => p.status === 'pending');
+      const list = document.getElementById('adminList');
+      
+      if(pending.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center;">Tidak ada pengajuan baru.</p>';
+        return;
+      }
+      
+      list.innerHTML = '';
+      pending.forEach(p => {
+        list.innerHTML += `
+          <div class="admin-item">
+            <img src="${p.url}" onclick="window.openViewer(${JSON.stringify(p).replace(/"/g, '&quot;')})" style="cursor:pointer;" title="Klik untuk lihat">
+            <div class="admin-info">
+              <h4>${p.title}</h4>
+              <p>Oleh: ${p.submitterName} | Kat: ${p.category}</p>
+            </div>
+            <div class="admin-actions">
+              <button class="btn-acc" onclick="handleModeration('${p.id}', 'approved', '${p.deviceId}', '${p.title}')"><i class='bx bx-check'></i></button>
+              <button class="btn-rej" onclick="handleModeration('${p.id}', 'rejected', '${p.deviceId}', '${p.title}')"><i class='bx bx-x'></i></button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    window.handleModeration = async (docId, status, targetDeviceId, title) => {
+      try {
+        await updateDoc(doc(db, "submissions", docId), { status: status });
+        
+        await addDoc(collection(db, "notifications"), {
+          deviceId: targetDeviceId,
+          message: `Pengajuan foto "${title}" Anda telah ${status === 'approved' ? 'DITERIMA' : 'DITOLAK'} oleh Admin.`,
+          status: status,
+          read: false,
+          timestamp: serverTimestamp()
+        });
+      } catch(err) {
+        console.error(err);
+        alert("Terjadi kesalahan saat update status!");
+      }
+    };
+
+    // ==========================================
+    // VIEWER
+    // ==========================================
+    window.openViewer = (data) => {
+      document.getElementById('viewerImage').src = data.url;
+      document.getElementById('viewerTitle').innerText = data.title;
+      document.getElementById('viewerDesc').innerText = data.description || '';
+      
+      // Fitur Download buat Base64
+      const btnLink = document.getElementById('btnDownloadLink');
+      btnLink.href = data.url;
+      btnLink.download = data.title.replace(/\s+/g, '_') + '.jpg';
+      
+      document.getElementById('btnShare').onclick = () => {
+        const text = `Lihat dokumentasi "${data.title}" di Maginti Album!`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+      };
+      
+      openModal('viewerModal');
+    };
+
+  </script>
+</body>
+</html>
