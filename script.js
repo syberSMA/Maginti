@@ -23,20 +23,20 @@ if (!deviceId) {
 }
 let allPhotos = [];
 let currentCategory = "all";
-// Database Icon Vector Berdasarkan Makna Kata
+
+// PERBAIKAN ICON: Pakai key yg lebih pendek untuk memastikan match
 const defaultIcons = { 
-  "TK MAGINTI": "bx-book-reader", "SD NEGERI 1": "bx-building", "SD NEGERI 5": "bx-building-house",
-  "SMP NEGERI 1": "bx-buildings", "SMA NEGERI 2": "bx-graduation", 
-  "SUNSET SANRES": "bx-sun", "STREET VIEW": "bx-map-alt", "UMUM": "bx-category" 
+  "TK": "bx-book-reader", "SD": "bx-building", 
+  "SMP": "bx-buildings", "SMA": "bx-graduation", 
+  "SUNSET": "bx-sun", "STREET": "bx-map-alt", "UMUM": "bx-category" 
 };
 
 function getCategoryIcon(catName) {
-  // Cek pencocokan parsial agar kategori baru tetap dapat icon mirip
   const nameL = catName.toUpperCase();
   for (const [key, icon] of Object.entries(defaultIcons)) {
     if (nameL.includes(key)) return icon;
   }
-  return "bx-folder"; // Default jika tidak ketemu
+  return "bx-folder"; // Default icon
 }
 
 let isAdmin = localStorage.getItem('maginti_admin') === 'true';
@@ -164,14 +164,14 @@ document.getElementById('btnTheme').onclick = () => {
 };
 
 // ==========================================
-// FIRESTORE LISTENER (GALERI & DASHBOARD REALTIME)
+// FIRESTORE LISTENER & RENDER
 // ==========================================
 const qPhotos = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
 onSnapshot(qPhotos, (snapshot) => {
   allPhotos = [];
   snapshot.forEach(doc => allPhotos.push({ id: doc.id, ...doc.data() }));
   renderGallery(); 
-  renderAdminDashboard(); // Realtime trigger untuk daftar ajuan
+  if(document.getElementById('adminAjuanModal').classList.contains('active')) renderAdminDashboard();
 });
 
 const qNotif = query(collection(db, "notifications"), where("deviceId", "==", deviceId));
@@ -190,19 +190,12 @@ onSnapshot(qNotif, (snapshot) => {
   document.getElementById('notifBadge').style.display = unreadCount > 0 ? 'block' : 'none';
 });
 
-// ==========================================
-// PENCARIAN PINTAR (TYPO-TOLERANT) & RENDER GALERI
-// ==========================================
 function isMatchSmart(text, query) {
   if(!query) return true;
   const t = text.toLowerCase(); const q = query.toLowerCase();
-  if(t.includes(q)) return true; // Exact match
-  
-  // Partial match: pecah kata query
+  if(t.includes(q)) return true; 
   const qWords = q.split(' ').filter(w => w.length > 2);
-  if(qWords.length > 0) {
-    return qWords.some(w => t.includes(w));
-  }
+  if(qWords.length > 0) return qWords.some(w => t.includes(w));
   return false;
 }
 
@@ -234,7 +227,7 @@ function renderGallery() {
   });
 
   if(filtered.length === 0) {
-    gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;"><i class="bx bx-search-alt" style="font-size:30px; margin-bottom:10px; display:block;"></i> Tidak ada hasil yang mirip dengan pencarian Anda.</p>';
+    gallery.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;"><i class="bx bx-search-alt" style="font-size:30px; margin-bottom:10px; display:block;"></i> Tidak ada hasil pencarian.</p>';
   } else {
     filtered.forEach(p => {
       const card = document.createElement('div');
@@ -359,7 +352,18 @@ function populateCategoryGrid() {
 }
 
 document.getElementById('btnAddPhoto').onclick = () => { 
-  if(checkDailyLimit()) { window.showToast("Limit Tercapai! Maks. 3 upload per hari.", "error"); return; }
+  if(checkDailyLimit() && !isAdmin) { window.showToast("Limit Tercapai! Maks. 3 upload per hari.", "error"); return; }
+  
+  // Ubah teks limit jika role admin aktif
+  const limitTxt = document.getElementById('limitTextUpload');
+  if(isAdmin) {
+    limitTxt.innerText = "(Mode Admin Aktif: Foto akan langsung dipublish tanpa pending)";
+    limitTxt.style.color = "#10b981";
+  } else {
+    limitTxt.innerText = "(Limit: Maksimal 3 upload per hari)";
+    limitTxt.style.color = "#ef4444";
+  }
+
   populateCategoryGrid();
   hiddenInputCat.value = ""; // Reset
   const savedName = localStorage.getItem('maginti_submitter_name');
@@ -389,7 +393,7 @@ function compressImage(file) {
 
 document.getElementById('submitForm').onsubmit = async (e) => {
   e.preventDefault();
-  if(checkDailyLimit()) { window.showToast("Gagal kirim! Limit harian penuh.", "error"); return; }
+  if(checkDailyLimit() && !isAdmin) { window.showToast("Gagal kirim! Limit harian penuh.", "error"); return; }
 
   const name = document.getElementById('subName').value.trim();
   const title = document.getElementById('subTitle').value.trim();
@@ -412,12 +416,20 @@ document.getElementById('submitForm').onsubmit = async (e) => {
       finalUrl = subUrl.value.trim();
     }
 
+    // LOGIKA ADMIN BYPASS AUTO-PUBLISH
+    const finalStatus = isAdmin ? 'approved' : 'pending';
+
     await addDoc(collection(db, "submissions"), {
       submitterName: name, deviceId: deviceId, title: title, description: desc,
-      category: category, url: finalUrl, status: 'pending', timestamp: serverTimestamp()
+      category: category, url: finalUrl, status: finalStatus, timestamp: serverTimestamp()
     });
 
-    window.showToast("Berhasil diajukan! Menunggu acc admin.", "success");
+    if(isAdmin){
+      window.showToast("Berhasil di-upload langsung ke galeri publik!", "success");
+      recordAdminLog("Admin Upload", `Mengunggah foto baru "${title}" ke kategori ${category}.`);
+    } else {
+      window.showToast("Berhasil diajukan! Menunggu acc admin.", "success");
+    }
     closeModal('submitModal'); document.getElementById('submitForm').reset();
   } catch(err) { window.showToast(err.message || "Gagal upload, cek koneksi!", "error"); } 
   finally { btn.disabled = false; btn.innerHTML = "<i class='bx bx-cloud-upload'></i> Ajukan Foto"; }
@@ -462,37 +474,59 @@ window.handleModeration = async (docId, status, targetDeviceId, title) => {
 };
 
 // ==========================================
-// VIEWER FULL GAMBAR DENGAN PRE-LOADER BUG FIX
+// VIEWER FULL GAMBAR & DIRECT DOWNLOAD
 // ==========================================
 window.openViewer = (data) => {
   const viewerImg = document.getElementById('viewerImage');
   const loading = document.getElementById('viewerLoading');
   const contentWrap = document.getElementById('viewerContent');
   
-  // 1. Reset state agar tidak muncul gambar sebelumnya
-  viewerImg.style.display = 'none';
-  contentWrap.style.display = 'none';
-  loading.style.display = 'flex';
-  viewerImg.src = ""; 
+  viewerImg.style.display = 'none'; contentWrap.style.display = 'none';
+  loading.style.display = 'flex'; viewerImg.src = ""; 
 
-  // 2. Set event onload pada gambar
   viewerImg.onload = () => {
-    loading.style.display = 'none';
-    viewerImg.style.display = 'block';
-    contentWrap.style.display = 'block';
+    loading.style.display = 'none'; viewerImg.style.display = 'block'; contentWrap.style.display = 'block';
   };
-
-  // 3. Set URL gambar yang baru (memancing onload)
   viewerImg.src = data.url;
 
   document.getElementById('viewerTitle').innerText = data.title;
   document.getElementById('viewerDesc').innerText = data.description || '';
   
-  const btnLink = document.getElementById('btnDownloadLink');
-  btnLink.href = data.url; btnLink.download = data.title.replace(/\s+/g, '_') + '.jpg';
+  // FETCH BLOB DOWNLOAD AGAR LANGSUNG TERUNDUH (TIDAK BUKA TAB BARU)
+  document.getElementById('btnDownloadTrigger').onclick = async function() {
+     try {
+       const btn = this;
+       const oriHtml = btn.innerHTML;
+       btn.innerHTML = "<i class='bx bx-loader bx-spin' style='font-size:20px;'></i> Proses...";
+       btn.style.pointerEvents = 'none';
+       
+       const response = await fetch(data.url);
+       if(!response.ok) throw new Error("Gagal Unduh");
+       const blob = await response.blob();
+       const objectUrl = URL.createObjectURL(blob);
+       
+       const link = document.createElement('a');
+       link.href = objectUrl;
+       link.download = data.title.replace(/\s+/g, '_') + '.jpg';
+       document.body.appendChild(link);
+       link.click();
+       document.body.removeChild(link);
+       URL.revokeObjectURL(objectUrl);
+       
+       btn.innerHTML = oriHtml; btn.style.pointerEvents = 'auto';
+     } catch(e) {
+       // Fallback kalau ter-blokir CORS
+       const a = document.createElement('a');
+       a.href = data.url; a.download = data.title.replace(/\s+/g, '_') + '.jpg';
+       a.target = '_blank'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+       this.innerHTML = "<i class='bx bx-download' style='font-size: 20px;'></i> Download"; this.style.pointerEvents = 'auto';
+     }
+  };
   
+  // SHARE WHATSAPP KE WEBSITE UTAMA
   document.getElementById('btnShare').onclick = () => {
-    const text = `Lihat dokumentasi "${data.title}" di Maginti Album!`;
+    const webUrl = window.location.origin;
+    const text = `Lihat dokumentasi "${data.title}" di Maginti Album!\n\nJelajahi foto aslinya di sini: ${webUrl}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
   openModal('viewerModal');
